@@ -7,7 +7,7 @@ import { SheetsService } from "./SheetsService";
 export class ProcessorService {
   private static instance: ProcessorService;
   private gmailService: GmailService;
-  private driveService: DriveService;
+  private driveService: typeof DriveService;
   private sheetsService: SheetsService;
 
   private constructor() {

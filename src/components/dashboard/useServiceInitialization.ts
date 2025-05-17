@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { GmailService } from "@/services/GmailService";
-import { DriveService } from "@/services/DriveService";
+import { DriveService } from "@/services/driveService";
 import { SheetsService } from "@/services/SheetsService";
 import { useToast } from "@/hooks/use-toast";
 
