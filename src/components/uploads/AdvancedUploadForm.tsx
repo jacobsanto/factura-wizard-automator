@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +8,9 @@ import UploadStatus from "@/components/uploads/UploadStatus";
 import GoogleSheetsOptions from "@/components/uploads/GoogleSheetsOptions";
 import { useToast } from "@/hooks/use-toast";
 import { logToGoogleSheet, logUpload } from "@/helpers/logHelpers";
+import { extractTextFromPdf } from "@/utils/pdfUtils";
+import { extractInvoiceDataWithGpt, GptExtractedData } from "@/api/gptApi";
+import { Loader } from "lucide-react";
 
 const AdvancedUploadForm: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -18,6 +22,7 @@ const AdvancedUploadForm: React.FC = () => {
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("€");
   const [uploading, setUploading] = useState(false);
+  const [parsing, setParsing] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<null | "success" | "error">(null);
   const [driveLink, setDriveLink] = useState<string | null>(null);
   const [useSheets, setUseSheets] = useState(false);
@@ -28,6 +33,61 @@ const AdvancedUploadForm: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
+      setUploadStatus(null); // Reset status when file changes
+    }
+  };
+
+  const handleParsePdf = async () => {
+    if (!file) {
+      toast({
+        variant: "destructive",
+        title: "Σφάλμα",
+        description: "Παρακαλώ επιλέξτε ένα αρχείο PDF πρώτα",
+      });
+      return;
+    }
+
+    if (!file.type.includes('pdf')) {
+      toast({
+        variant: "destructive",
+        title: "Σφάλμα",
+        description: "Το αρχείο πρέπει να είναι τύπου PDF",
+      });
+      return;
+    }
+
+    setParsing(true);
+    try {
+      // Extract text from PDF
+      const extractedText = await extractTextFromPdf(file);
+      
+      // Process with GPT
+      const extractedData = await extractInvoiceDataWithGpt(extractedText);
+      
+      // Fill the form fields with extracted data
+      if (extractedData) {
+        setClientVat(extractedData.vatNumber !== "unknown" ? extractedData.vatNumber : "");
+        setClientName(extractedData.clientName !== "unknown" ? extractedData.clientName : "");
+        setIssuer(extractedData.issuer !== "unknown" ? extractedData.issuer : "");
+        setInvoiceNumber(extractedData.documentNumber !== "unknown" ? extractedData.documentNumber : "");
+        setDate(extractedData.date !== "unknown" ? extractedData.date : "");
+        setAmount(extractedData.amount !== "unknown" ? extractedData.amount : "");
+        setCurrency(extractedData.currency !== "unknown" ? extractedData.currency : "€");
+        
+        toast({
+          title: "Επιτυχία",
+          description: "Τα στοιχεία του τιμολογίου εξήχθησαν επιτυχώς",
+        });
+      }
+    } catch (error) {
+      console.error("Error parsing PDF:", error);
+      toast({
+        variant: "destructive",
+        title: "Σφάλμα",
+        description: "Δεν ήταν δυνατή η ανάλυση του αρχείου PDF",
+      });
+    } finally {
+      setParsing(false);
     }
   };
 
@@ -129,7 +189,32 @@ const AdvancedUploadForm: React.FC = () => {
     <form onSubmit={handleUpload} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="file">Αρχείο</Label>
-        <Input id="file" type="file" accept=".pdf" onChange={handleFileChange} />
+        <div className="flex gap-2">
+          <Input 
+            id="file" 
+            type="file" 
+            accept=".pdf" 
+            onChange={handleFileChange} 
+            className="flex-1"
+          />
+          {file && file.type.includes('pdf') && (
+            <Button 
+              type="button"
+              onClick={handleParsePdf} 
+              disabled={parsing || !file}
+              className="whitespace-nowrap"
+            >
+              {parsing ? (
+                <>
+                  <Loader className="mr-2 h-4 w-4 animate-spin" />
+                  Ανάλυση...
+                </>
+              ) : (
+                "Ανάλυση PDF"
+              )}
+            </Button>
+          )}
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -224,7 +309,12 @@ const AdvancedUploadForm: React.FC = () => {
         className="w-full" 
         disabled={uploading || !file}
       >
-        {uploading ? "Αποστολή..." : "Αποστολή στο Drive"}
+        {uploading ? (
+          <>
+            <Loader className="mr-2 h-4 w-4 animate-spin" />
+            Αποστολή...
+          </>
+        ) : "Αποστολή στο Drive"}
       </Button>
       
       {uploadStatus && (
