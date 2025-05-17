@@ -134,8 +134,9 @@ export const useAuthInitialization = ({
             
             // Show a warning if any service failed
             if (!driveStatus || !gmailStatus || !sheetsStatus) {
+              // Changed from "warning" to "default" as the toast only accepts "default" or "destructive"
               toast({
-                variant: "warning",
+                variant: "default",
                 title: "Προσοχή",
                 description: "Ορισμένες υπηρεσίες δεν μπόρεσαν να αρχικοποιηθούν. Η εφαρμογή ενδέχεται να έχει περιορισμένη λειτουργικότητα.",
               });
