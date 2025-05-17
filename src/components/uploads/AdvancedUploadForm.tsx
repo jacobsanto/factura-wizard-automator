@@ -1,6 +1,7 @@
 
 import React from "react";
-import { useAdvancedUploadForm } from "@/hooks/useAdvancedUploadForm";
+import { useInvoiceForm } from "@/hooks/useInvoiceForm";
+import FormContainer from "@/components/uploads/FormContainer";
 import UploadStatus from "@/components/uploads/UploadStatus";
 import FileUpload from "@/components/uploads/FileUpload";
 import InvoiceFormFields from "@/components/uploads/InvoiceFormFields";
@@ -37,10 +38,10 @@ const AdvancedUploadForm: React.FC = () => {
     handleFileChange,
     handleParsePdf,
     handleUpload
-  } = useAdvancedUploadForm();
+  } = useInvoiceForm();
 
   return (
-    <form onSubmit={handleUpload} className="space-y-4">
+    <FormContainer onSubmit={handleUpload}>
       <FileUpload
         file={file}
         handleFileChange={handleFileChange}
@@ -88,7 +89,7 @@ const AdvancedUploadForm: React.FC = () => {
           message={uploadStatus === "error" ? "Η αποστολή απέτυχε. Παρακαλώ προσπαθήστε ξανά." : undefined}
         />
       )}
-    </form>
+    </FormContainer>
   );
 };
 

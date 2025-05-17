@@ -1,4 +1,13 @@
 
+/**
+ * @deprecated This hook is now split into smaller, more focused hooks:
+ * - useFileUpload
+ * - useInvoiceForm
+ * - useGoogleSheetsOptions
+ * - useFileSubmission
+ * 
+ * Please use these hooks instead. This hook is kept for backward compatibility.
+ */
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { uploadFile } from "@/helpers";
