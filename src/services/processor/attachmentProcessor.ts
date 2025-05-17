@@ -17,6 +17,7 @@ export class AttachmentProcessorService {
   private loggingService: LoggingService;
 
   private constructor() {
+    console.log("AttachmentProcessorService initialized");
     this.gmailService = GmailService.getInstance();
     this.driveService = EnhancedDriveService.getInstance();
     this.dataExtractor = DataExtractorService.getInstance();
@@ -26,6 +27,7 @@ export class AttachmentProcessorService {
   public static getInstance(): AttachmentProcessorService {
     if (!AttachmentProcessorService.instance) {
       AttachmentProcessorService.instance = new AttachmentProcessorService();
+      console.log("Created new AttachmentProcessorService instance");
     }
     return AttachmentProcessorService.instance;
   }
@@ -38,27 +40,43 @@ export class AttachmentProcessorService {
     attachment: AttachmentData,
     updateCallback: (status: ProcessingStatus) => void
   ): Promise<ProcessResult> {
+    console.log("Starting to process attachment", { 
+      emailId, 
+      attachmentId: attachment.id, 
+      attachmentName: attachment.name 
+    });
+    
     try {
       // Update status to processing
       updateCallback({ status: "processing", message: "Κατέβασμα αρχείου..." });
+      console.log("Downloading attachment from Gmail");
       
       // Download attachment
       const pdfBlob = await this.gmailService.downloadAttachment(emailId, attachment.id);
       if (!pdfBlob) {
+        console.error("Failed to download attachment");
         updateCallback({ status: "error", message: "Αδυναμία λήψης αρχείου" });
         return { success: false, message: "Failed to download attachment" };
       }
       
+      console.log("Attachment downloaded successfully", { 
+        type: pdfBlob.type, 
+        size: pdfBlob.size 
+      });
+      
       // Extract data
       updateCallback({ status: "processing", message: "Εξαγωγή δεδομένων..." });
+      console.log("Extracting data from attachment");
       const extractedData = await this.dataExtractor.extractDataFromPdf(pdfBlob);
+      console.log("Data extracted successfully", extractedData);
       
       // Try to use the streamlined upload function first
       updateCallback({ status: "processing", message: "Μεταφόρτωση αρχείου στο Drive..." });
+      console.log("Attempting streamlined upload to Drive");
       
       try {
         // Use the new direct upload method
-        const uploadResult = await this.driveService.uploadInvoiceToDrive({
+        const uploadParams = {
           file: pdfBlob,
           clientVat: extractedData.vatNumber,
           clientName: extractedData.clientName || "Άγνωστος Πελάτης",
@@ -67,7 +85,11 @@ export class AttachmentProcessorService {
           date: extractedData.date,
           amount: extractedData.amount.toString(),
           currency: extractedData.currency
-        });
+        };
+        
+        console.log("Direct upload parameters:", uploadParams);
+        const uploadResult = await this.driveService.uploadInvoiceToDrive(uploadParams);
+        console.log("Direct upload successful", uploadResult);
         
         // Log the successful upload
         this.loggingService.logUploadFromDoc(
@@ -96,6 +118,7 @@ export class AttachmentProcessorService {
         
         // Generate new filename
         const newFilename = await this.driveService.generateFilename(extractedData);
+        console.log("Generated filename:", newFilename);
         
         // Generate path segments using the new method
         const pathSegments = generateDrivePath({
@@ -105,14 +128,20 @@ export class AttachmentProcessorService {
           date: extractedData.date
         });
         
+        console.log("Generated path segments:", pathSegments);
         const targetFolder = joinPathSegments(pathSegments);
+        console.log("Target folder path:", targetFolder);
         
         // Create folder structure if it doesn't exist
+        console.log("Creating folder structure");
         const folderId = await this.driveService.getOrCreateFolder(targetFolder);
+        console.log("Created/found folder with ID:", folderId);
         
         // Upload file
         updateCallback({ status: "processing", message: "Μεταφόρτωση αρχείου..." });
+        console.log("Uploading file to folder", { targetFolder, newFilename });
         const fileId = await this.driveService.uploadFile(targetFolder, newFilename, pdfBlob);
+        console.log("File uploaded with ID:", fileId);
         
         // Log the successful upload
         this.loggingService.logUploadFromDoc(
