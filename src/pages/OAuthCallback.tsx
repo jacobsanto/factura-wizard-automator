@@ -8,6 +8,7 @@ const OAuthCallback: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const [errorDetails, setErrorDetails] = useState<string>("");
   
   useEffect(() => {
     const processAuthCode = async () => {
@@ -18,13 +19,15 @@ const OAuthCallback: React.FC = () => {
         const error = urlParams.get("error");
         
         console.log("OAuth callback received. Code exists:", !!code, "Error:", error || "none");
+        console.log("Full URL:", window.location.href);
         
         if (error) {
           console.error("Authentication error:", error);
           setStatus("error");
+          setErrorDetails(`Error: ${error}`);
           toast({
             title: "Σφάλμα σύνδεσης",
-            description: "Η σύνδεση με το Google απέτυχε.",
+            description: `Η σύνδεση με το Google απέτυχε: ${error}`,
             variant: "destructive",
           });
           setTimeout(() => navigate("/"), 3000);
@@ -34,6 +37,7 @@ const OAuthCallback: React.FC = () => {
         if (!code) {
           console.error("No authentication code received");
           setStatus("error");
+          setErrorDetails("No authentication code received");
           toast({
             title: "Σφάλμα σύνδεσης",
             description: "Δεν ελήφθη κωδικός πιστοποίησης.",
@@ -50,6 +54,7 @@ const OAuthCallback: React.FC = () => {
         
         if (!tokens) {
           setStatus("error");
+          setErrorDetails("Failed to exchange code for tokens");
           toast({
             title: "Σφάλμα σύνδεσης",
             description: "Δεν ήταν δυνατή η ανταλλαγή του κωδικού για tokens.",
@@ -64,6 +69,7 @@ const OAuthCallback: React.FC = () => {
         
         // Fetch user info from Google API
         try {
+          console.log("Fetching user info with access token");
           const userInfoResponse = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
             headers: {
               Authorization: `Bearer ${tokens.access_token}`,
@@ -72,7 +78,7 @@ const OAuthCallback: React.FC = () => {
           
           if (userInfoResponse.ok) {
             const userInfo = await userInfoResponse.json();
-            console.log("✅ User Info:", userInfo);
+            console.log("✅ User Info received:", userInfo.email);
             
             // Store user info in localStorage
             localStorage.setItem("google_user", JSON.stringify(userInfo));
@@ -80,6 +86,8 @@ const OAuthCallback: React.FC = () => {
             localStorage.setItem("user", JSON.stringify(userInfo));
           } else {
             console.error("Failed to fetch user info:", await userInfoResponse.text());
+            // Get the status code and content of the error response
+            console.error(`Status: ${userInfoResponse.status}, StatusText: ${userInfoResponse.statusText}`);
           }
         } catch (error) {
           console.error("Error fetching user info:", error);
@@ -98,6 +106,7 @@ const OAuthCallback: React.FC = () => {
       } catch (error) {
         console.error("Error processing OAuth callback:", error);
         setStatus("error");
+        setErrorDetails(error instanceof Error ? error.message : String(error));
         toast({
           title: "Σφάλμα σύνδεσης",
           description: "Προέκυψε σφάλμα κατά την επεξεργασία της απάντησης σύνδεσης.",
@@ -138,7 +147,12 @@ const OAuthCallback: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
               <h2 className="text-2xl font-semibold mb-2">Σφάλμα σύνδεσης</h2>
-              <p className="text-gray-600">Προέκυψε σφάλμα κατά τη σύνδεση. Ανακατεύθυνση στην αρχική σελίδα...</p>
+              <p className="text-gray-600 mb-2">Προέκυψε σφάλμα κατά τη σύνδεση. Ανακατεύθυνση στην αρχική σελίδα...</p>
+              {errorDetails && (
+                <p className="text-sm text-red-500 mt-2 p-2 bg-red-50 rounded">
+                  {errorDetails}
+                </p>
+              )}
             </>
           )}
         </div>

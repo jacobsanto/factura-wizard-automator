@@ -4,13 +4,53 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText } from "lucide-react";
 import { getGoogleAuthUrl } from "@/services/google";
+import { useToast } from "@/hooks/use-toast";
 
 const Login: React.FC = () => {
   const [isLoading, setIsLoading] = React.useState(false);
+  const { toast } = useToast();
+
+  // Clear any existing authentication data on login page load
+  // This helps recover from broken auth states
+  React.useEffect(() => {
+    const cleanupLocalStorage = () => {
+      try {
+        // Check if we have partial auth data that might cause issues
+        const hasPartialAuth = 
+          (localStorage.getItem("google_tokens") && !localStorage.getItem("google_user")) ||
+          (!localStorage.getItem("google_tokens") && localStorage.getItem("google_user"));
+        
+        // Only clear if we detect a problem
+        if (hasPartialAuth) {
+          console.log("Login: Detected partial authentication data, cleaning up local storage");
+          localStorage.removeItem("google_tokens");
+          localStorage.removeItem("google_user");
+          localStorage.removeItem("user");
+        }
+      } catch (error) {
+        console.error("Login: Error cleaning up local storage:", error);
+      }
+    };
+    
+    cleanupLocalStorage();
+  }, []);
 
   const handleSignIn = () => {
     setIsLoading(true);
-    window.location.href = getGoogleAuthUrl();
+    
+    try {
+      const authUrl = getGoogleAuthUrl();
+      console.log("Login: Redirecting to Google auth URL:", authUrl);
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error("Login: Error generating Google auth URL:", error);
+      setIsLoading(false);
+      toast({
+        variant: "destructive",
+        title: "Σφάλμα",
+        description: "Προέκυψε σφάλμα κατά τη σύνδεση. Παρακαλώ δοκιμάστε ξανά."
+      });
+    }
   };
 
   return (
