@@ -61,8 +61,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           // If we have a valid token, initialize services
           setIsAuthenticated(true);
           
-          // Extract user info from ID token if available
-          if (tokens.id_token) {
+          // Check for Google user info from direct API call first
+          const storedGoogleUser = localStorage.getItem("google_user");
+          if (storedGoogleUser) {
+            try {
+              const googleUserInfo = JSON.parse(storedGoogleUser);
+              console.log("AuthProvider: Using Google API user info", googleUserInfo.email);
+              setUser({
+                name: googleUserInfo.name || "Google User",
+                email: googleUserInfo.email || "user@example.com",
+                picture: googleUserInfo.picture || "https://via.placeholder.com/40",
+                sub: googleUserInfo.id || ""
+              });
+            } catch (error) {
+              console.error("AuthProvider: Error parsing stored Google user info:", error);
+              // Fall back to ID token or default user
+            }
+          } 
+          // If no Google API user info, try with ID token
+          else if (tokens.id_token) {
             const userInfo = extractUserInfo(tokens.id_token);
             if (userInfo) {
               console.log("AuthProvider: User info extracted from ID token", userInfo.email);
@@ -120,6 +137,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       // Clear tokens
       clearTokens();
+      
+      // Clear Google user info
+      localStorage.removeItem("google_user");
       
       // Reset state
       setIsAuthenticated(false);

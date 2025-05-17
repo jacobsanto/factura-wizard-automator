@@ -62,6 +62,28 @@ const OAuthCallback: React.FC = () => {
         // Store the tokens
         storeTokens(tokens);
         
+        // Fetch user info from Google API
+        try {
+          const userInfoResponse = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+            headers: {
+              Authorization: `Bearer ${tokens.access_token}`,
+            },
+          });
+          
+          if (userInfoResponse.ok) {
+            const userInfo = await userInfoResponse.json();
+            console.log("✅ User Info:", userInfo);
+            
+            // Store user info in localStorage
+            localStorage.setItem("google_user", JSON.stringify(userInfo));
+          } else {
+            console.error("Failed to fetch user info:", await userInfoResponse.text());
+          }
+        } catch (error) {
+          console.error("Error fetching user info:", error);
+          // Continue with the flow even if user info fetch fails
+        }
+        
         // Signal success
         setStatus("success");
         toast({
