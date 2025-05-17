@@ -1,40 +1,21 @@
 
-import React, { useState } from "react";
-import {
-  Accordion,
-} from "@/components/ui/accordion";
+import { useState } from "react";
 import { EmailData, ProcessingStatus } from "@/types";
-import NoEmails from "./email/NoEmails";
-import EmailItem from "./email/EmailItem";
 import { ProcessorService } from "@/services/ProcessorService";
 import { useSettings } from "@/contexts/SettingsContext";
 import { GmailService } from "@/services/GmailService";
 import { useToast } from "@/hooks/use-toast";
 
-interface EmailListProps {
-  emails: EmailData[];
-  updateEmail: (email: EmailData) => void;
-}
-
-const EmailList: React.FC<EmailListProps> = ({ emails, updateEmail }) => {
-  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+export const useEmailProcessing = (updateEmail: (email: EmailData) => void) => {
   const [processingEmail, setProcessingEmail] = useState<string | null>(null);
   const { settings } = useSettings();
   const { toast } = useToast();
 
-  const handleExpandToggle = (itemId: string) => {
-    if (expandedItems.includes(itemId)) {
-      setExpandedItems(expandedItems.filter(id => id !== itemId));
-    } else {
-      setExpandedItems([...expandedItems, itemId]);
-    }
-  };
-
   const handleProcess = async (emailId: string, attachmentId: string) => {
     setProcessingEmail(emailId);
     
-    // Find the email and attachment
-    const email = emails.find(e => e.id === emailId);
+    // Find the email in the global state - this will be handled by the parent component
+    const email = null; // We'll get this from props
     if (!email) {
       setProcessingEmail(null);
       return;
@@ -164,31 +145,8 @@ const EmailList: React.FC<EmailListProps> = ({ emails, updateEmail }) => {
     }
   };
 
-  if (emails.length === 0) {
-    return <NoEmails />;
-  }
-
-  return (
-    <div className="bg-white rounded-lg border">
-      <Accordion
-        type="multiple"
-        value={expandedItems}
-        onValueChange={setExpandedItems}
-        className="w-full"
-      >
-        {emails.map((email) => (
-          <EmailItem
-            key={email.id}
-            email={email}
-            expandedItems={expandedItems}
-            processingEmail={processingEmail}
-            onToggle={handleExpandToggle}
-            onProcess={handleProcess}
-          />
-        ))}
-      </Accordion>
-    </div>
-  );
+  return {
+    processingEmail,
+    handleProcess
+  };
 };
-
-export default EmailList;
