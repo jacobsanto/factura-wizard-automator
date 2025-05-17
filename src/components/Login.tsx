@@ -1,8 +1,6 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText } from "lucide-react";
 import { getGoogleAuthUrl, checkAndFixAuthState } from "@/services/google";
 import { useToast } from "@/hooks/use-toast";
 import { GOOGLE_REDIRECT_URI } from "@/env";
@@ -97,7 +95,11 @@ const Login: React.FC = () => {
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center">
-            <FileText className="logo-debug-trigger h-12 w-12 text-brand-blue mb-2 cursor-pointer" />
+            <img 
+              src="/lovable-uploads/eb8a966b-e206-44a4-9398-d5f242f5e9f4.png" 
+              alt="Arivia Group Logo" 
+              className="logo-debug-trigger h-16 w-auto mb-2 cursor-pointer" 
+            />
           </div>
           <CardTitle className="text-2xl font-bold text-center">
             Αυτοματισμός Παραστατικών

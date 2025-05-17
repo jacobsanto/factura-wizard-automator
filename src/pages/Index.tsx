@@ -59,6 +59,13 @@ const AppContent: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <img 
+              src="/lovable-uploads/eb8a966b-e206-44a4-9398-d5f242f5e9f4.png" 
+              alt="Arivia Group Logo" 
+              className="h-12 w-auto" 
+            />
+          </div>
           <div className="w-16 h-16 border-4 border-t-brand-blue border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-lg font-medium text-gray-600">Φόρτωση...</p>
           
@@ -95,7 +102,7 @@ const AppContent: React.FC = () => {
             <Dashboard />
           </main>
           <footer className="py-4 px-6 border-t text-center text-sm text-gray-500">
-            © {new Date().getFullYear()} Αυτοματισμός Παραστατικών - Google Workspace Integration
+            © {new Date().getFullYear()} Αριβία Γκρουπ - Αυτοματισμός Παραστατικών
           </footer>
         </>
       ) : (
