@@ -21,30 +21,44 @@ export const exchangeCodeForTokens = async (code: string): Promise<GoogleTokens 
       return null;
     }
 
-    console.log("Exchanging code for tokens with redirect URI:", GOOGLE_REDIRECT_URI);
+    console.log("Exchanging code for tokens with:");
+    console.log("- Client ID:", GOOGLE_CLIENT_ID.substring(0, 8) + "...");
+    console.log("- Client Secret:", "PRESENT (hidden)");
+    console.log("- Redirect URI:", GOOGLE_REDIRECT_URI);
+    console.log("- Current Origin:", typeof window !== "undefined" ? window.location.origin : "Not in browser");
     
-    // Log the calculated redirect URI to check if it matches what we expect
-    console.log("Current origin:", window.location.origin);
-    console.log("Current URL:", window.location.href);
+    const tokenRequest = {
+      code,
+      client_id: GOOGLE_CLIENT_ID,
+      client_secret: GOOGLE_CLIENT_SECRET,
+      redirect_uri: GOOGLE_REDIRECT_URI,
+      grant_type: "authorization_code",
+    };
+    
+    console.log("Sending token request to:", GOOGLE_TOKEN_URI);
     
     const response = await fetch(GOOGLE_TOKEN_URI, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams({
-        code,
-        client_id: GOOGLE_CLIENT_ID,
-        client_secret: GOOGLE_CLIENT_SECRET,
-        redirect_uri: GOOGLE_REDIRECT_URI,
-        grant_type: "authorization_code",
-      }),
+      body: new URLSearchParams(tokenRequest),
     });
 
+    console.log("Token response status:", response.status, response.statusText);
+
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Error exchanging code for tokens:", errorData);
-      console.error("HTTP Status:", response.status, response.statusText);
+      const errorText = await response.text();
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch (e) {
+        errorData = { error: "Failed to parse error response", raw: errorText };
+      }
+      
+      console.error("Error exchanging code for tokens:");
+      console.error("- Status:", response.status, response.statusText);
+      console.error("- Error data:", errorData);
       return null;
     }
 
@@ -56,6 +70,7 @@ export const exchangeCodeForTokens = async (code: string): Promise<GoogleTokens 
       console.log(`Token will expire in ${tokens.expires_in} seconds (${new Date(tokens.expiry_date).toLocaleString()})`);
     }
     
+    console.log("Token exchange successful, received access token");
     return tokens as GoogleTokens;
   } catch (error) {
     console.error("Exception during code exchange:", error);

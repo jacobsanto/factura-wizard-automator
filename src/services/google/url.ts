@@ -18,8 +18,14 @@ export const getGoogleAuthUrl = () => {
     throw new Error("OAuth configuration missing");
   }
 
-  console.log("Generating Google Auth URL with redirect URI:", GOOGLE_REDIRECT_URI);
-  console.log("Current origin:", window.location.origin);
+  console.log("Generating Google Auth URL with:");
+  console.log("- Client ID:", GOOGLE_CLIENT_ID.substring(0, 8) + "...");
+  console.log("- Redirect URI:", GOOGLE_REDIRECT_URI);
+  console.log("- Current Origin:", typeof window !== "undefined" ? window.location.origin : "Not in browser");
+  console.log("- Requested Scopes:", SCOPES);
   
-  return `${GOOGLE_AUTH_URI}?response_type=code&client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(GOOGLE_REDIRECT_URI)}&scope=${encodeURIComponent(SCOPES)}&access_type=offline&prompt=consent`;
+  const authUrl = `${GOOGLE_AUTH_URI}?response_type=code&client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(GOOGLE_REDIRECT_URI)}&scope=${encodeURIComponent(SCOPES)}&access_type=offline&prompt=consent`;
+  
+  console.log("Full Auth URL length:", authUrl.length);
+  return authUrl;
 };

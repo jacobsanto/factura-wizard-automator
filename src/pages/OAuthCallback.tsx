@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { exchangeCodeForTokens, storeTokens } from "@/services/google";
 import { useToast } from "@/hooks/use-toast";
+import { GOOGLE_REDIRECT_URI } from "@/env";
 
 const OAuthCallback: React.FC = () => {
   const navigate = useNavigate();
@@ -18,8 +19,11 @@ const OAuthCallback: React.FC = () => {
         const code = urlParams.get("code");
         const error = urlParams.get("error");
         
-        console.log("OAuth callback received. Code exists:", !!code, "Error:", error || "none");
-        console.log("Full URL:", window.location.href);
+        console.log("OAuth callback received:");
+        console.log("- Code exists:", !!code);
+        console.log("- Error:", error || "none");
+        console.log("- Full URL:", window.location.href);
+        console.log("- Expected redirect URI:", GOOGLE_REDIRECT_URI);
         
         if (error) {
           console.error("Authentication error:", error);
@@ -105,8 +109,8 @@ const OAuthCallback: React.FC = () => {
         setTimeout(() => navigate("/"), 1500);
       } catch (error) {
         console.error("Error processing OAuth callback:", error);
-        setStatus("error");
         setErrorDetails(error instanceof Error ? error.message : String(error));
+        setStatus("error");
         toast({
           title: "Σφάλμα σύνδεσης",
           description: "Προέκυψε σφάλμα κατά την επεξεργασία της απάντησης σύνδεσης.",

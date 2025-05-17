@@ -9,14 +9,17 @@ export const GOOGLE_CLIENT_SECRET = "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";
 // Dynamically determine the current URL for the redirect URI
 // This helps with different environments (local, preview, production)
 const getCurrentDomain = () => {
-  return typeof window !== "undefined" 
-    ? `${window.location.protocol}//${window.location.host}`
-    : "https://preview--factura-wizard-automator.lovable.app"; // Fallback
+  // When in the browser, use the current window location
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+  // Fallback for SSR or during initialization
+  return "https://preview--factura-wizard-automator.lovable.app";
 };
 
 // Make sure this matches EXACTLY what's configured in Google Cloud Console
-// Using a dynamic URI that adapts to the current deployment
 export const GOOGLE_REDIRECT_URI = `${getCurrentDomain()}/oauth2callback`;
 
-// Note: For production, consider using a proper environment variable system
-// This approach works for development but is not secure for production deployments
+// Log the redirect URI during initialization to help with debugging
+console.log("OAuth Redirect URI configured as:", GOOGLE_REDIRECT_URI);
+

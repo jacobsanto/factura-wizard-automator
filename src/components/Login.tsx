@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { FileText } from "lucide-react";
 import { getGoogleAuthUrl } from "@/services/google";
 import { useToast } from "@/hooks/use-toast";
+import { GOOGLE_REDIRECT_URI } from "@/env";
 
 const Login: React.FC = () => {
   const [isLoading, setIsLoading] = React.useState(false);
@@ -33,14 +34,21 @@ const Login: React.FC = () => {
     };
     
     cleanupLocalStorage();
+    
+    // Log OAuth configuration on component mount to help with debugging
+    console.log("Login component mounted");
+    console.log("- Current origin:", window.location.origin);
+    console.log("- Current pathname:", window.location.pathname);
+    console.log("- Configured redirect URI:", GOOGLE_REDIRECT_URI);
   }, []);
 
   const handleSignIn = () => {
     setIsLoading(true);
     
     try {
+      console.log("Login: Initiating Google sign-in flow...");
       const authUrl = getGoogleAuthUrl();
-      console.log("Login: Redirecting to Google auth URL:", authUrl);
+      console.log("Login: Generated auth URL, redirecting user...");
       window.location.href = authUrl;
     } catch (error) {
       console.error("Login: Error generating Google auth URL:", error);
