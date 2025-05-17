@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { GmailService } from "@/services/GmailService";
+import { GmailService } from "@/services/gmail";
 import { EmailData, ProcessingStats as StatsType } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 

@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { GmailService } from "@/services/GmailService";
+import { GmailService } from "@/services/gmail";
 import { EnhancedDriveService } from "@/services/drive"; 
 import { SheetsService } from "@/services/SheetsService";
 import { useToast } from "@/hooks/use-toast";

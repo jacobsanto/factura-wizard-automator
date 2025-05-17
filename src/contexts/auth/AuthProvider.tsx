@@ -11,7 +11,7 @@ import {
   refreshAccessToken
 } from "@/services/google";
 import { EnhancedDriveService } from "@/services/drive";
-import { GmailService } from "@/services/GmailService";
+import { GmailService } from "@/services/gmail";
 import { SheetsService } from "@/services/SheetsService";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

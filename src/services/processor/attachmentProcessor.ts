@@ -3,7 +3,7 @@
  * Service for processing attachments
  */
 import { AttachmentData, DocumentData, ProcessingStatus } from "@/types";
-import { GmailService } from "../GmailService";
+import { GmailService } from "../gmail";
 import { EnhancedDriveService } from "../drive";
 import { LoggingService } from "../LoggingService";
 import { DataExtractorService } from "./dataExtractor";

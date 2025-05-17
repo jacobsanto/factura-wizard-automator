@@ -1,9 +1,9 @@
 
 import { useState } from "react";
 import { EmailData, ProcessingStatus } from "@/types";
-import { ProcessorService } from "@/services/ProcessorService";
+import { ProcessorService } from "@/services/processor";
 import { useSettings } from "@/contexts/SettingsContext";
-import { GmailService } from "@/services/GmailService";
+import { GmailService } from "@/services/gmail";
 import { useToast } from "@/hooks/use-toast";
 
 export const useEmailProcessing = (emails: EmailData[], updateEmail: (email: EmailData) => void) => {
