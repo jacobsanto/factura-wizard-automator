@@ -90,7 +90,7 @@ const Login: React.FC = () => {
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center">
-            <img src="/lovable-uploads/eb8a966b-e206-44a4-9398-d5f242f5e9f4.png" alt="Arivia Group Logo" className="logo-debug-trigger h-16 w-auto mb-2 cursor-pointer object-fill" />
+            <img alt="Arivia Group Logo" src="/lovable-uploads/9e419dda-f61f-41e7-ac02-301a7ae32f6f.png" className="logo-debug-trigger h-8 w-auto mb-4 cursor-pointer object-fill" />
           </div>
           <CardTitle className="text-2xl font-bold text-center">
             Αυτοματισμός Παραστατικών
