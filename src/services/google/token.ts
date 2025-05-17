@@ -16,6 +16,8 @@ export const exchangeCodeForTokens = async (code: string): Promise<GoogleTokens 
       return null;
     }
 
+    console.log("Exchanging code for tokens with redirect URI:", GOOGLE_REDIRECT_URI);
+    
     const response = await fetch(GOOGLE_TOKEN_URI, {
       method: "POST",
       headers: {

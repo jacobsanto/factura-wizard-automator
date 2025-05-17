@@ -14,5 +14,7 @@ export const getGoogleAuthUrl = () => {
     throw new Error("OAuth configuration missing");
   }
 
-  return `${GOOGLE_AUTH_URI}?response_type=code&client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${GOOGLE_REDIRECT_URI}&scope=${encodeURIComponent(SCOPES)}&access_type=offline&prompt=consent`;
+  console.log("Generating Google Auth URL with redirect URI:", GOOGLE_REDIRECT_URI);
+  
+  return `${GOOGLE_AUTH_URI}?response_type=code&client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(GOOGLE_REDIRECT_URI)}&scope=${encodeURIComponent(SCOPES)}&access_type=offline&prompt=consent`;
 };

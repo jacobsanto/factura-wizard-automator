@@ -17,6 +17,8 @@ const OAuthCallback: React.FC = () => {
         const code = urlParams.get("code");
         const error = urlParams.get("error");
         
+        console.log("OAuth callback received. Code exists:", !!code, "Error:", error || "none");
+        
         if (error) {
           console.error("Authentication error:", error);
           setStatus("error");
@@ -42,7 +44,9 @@ const OAuthCallback: React.FC = () => {
         }
         
         // Exchange the code for tokens
+        console.log("Attempting to exchange code for tokens...");
         const tokens = await exchangeCodeForTokens(code);
+        console.log("Token exchange result:", tokens ? "Successful" : "Failed");
         
         if (!tokens) {
           setStatus("error");
