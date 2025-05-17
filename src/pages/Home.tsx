@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { uploadInvoiceToDrive, uploadFile } from "@/helpers";
 import UploadStatus from "@/components/uploads/UploadStatus";
 import { useToast } from "@/hooks/use-toast";
-import { logUpload } from "@/helpers/logHelpers";
+import { logUpload, logToGoogleSheet } from "@/helpers/logHelpers";
 
 const Home: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
