@@ -1,12 +1,17 @@
 
 import React from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText } from "lucide-react";
+import { getGoogleAuthUrl } from "@/services/google";
 
 const Login: React.FC = () => {
-  const { signIn, isLoading } = useAuth();
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const handleSignIn = () => {
+    setIsLoading(true);
+    window.location.href = getGoogleAuthUrl();
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
@@ -30,7 +35,7 @@ const Login: React.FC = () => {
           </div>
         </CardContent>
         <CardFooter>
-          <Button onClick={signIn} disabled={isLoading} className="w-full bg-brand-blue hover:bg-blue-700">
+          <Button onClick={handleSignIn} disabled={isLoading} className="w-full bg-brand-blue hover:bg-blue-700">
             {isLoading ? (
               <div className="flex items-center justify-center">
                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
