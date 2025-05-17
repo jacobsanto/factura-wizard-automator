@@ -41,19 +41,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Check if user is authenticated on component mount
   useEffect(() => {
     const checkAuth = async () => {
+      console.log("AuthProvider: Checking authentication status...");
       setIsLoading(true);
       try {
         const tokens = getStoredTokens();
         
         if (!tokens) {
+          console.log("AuthProvider: No tokens found in storage");
           setIsLoading(false);
           return;
         }
         
+        console.log("AuthProvider: Tokens found, validating access token");
         // Try to get a valid access token
         const accessToken = await getValidAccessToken();
         
         if (accessToken) {
+          console.log("AuthProvider: Valid access token obtained");
           // If we have a valid token, initialize services
           setIsAuthenticated(true);
           
@@ -61,10 +65,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           if (tokens.id_token) {
             const userInfo = extractUserInfo(tokens.id_token);
             if (userInfo) {
+              console.log("AuthProvider: User info extracted from ID token", userInfo.email);
               setUser(userInfo);
             }
           } else {
             // Fallback for backward compatibility
+            console.log("AuthProvider: No ID token found, using fallback user info");
             setUser({
               name: "Google User",
               email: "user@example.com",
@@ -73,6 +79,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
           
           // Initialize services
+          console.log("AuthProvider: Initializing services");
           const driveService = EnhancedDriveService.getInstance();
           const gmailService = GmailService.getInstance();
           const sheetsService = SheetsService.getInstance();
@@ -81,14 +88,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           const gmailStatus = await gmailService.initialize();
           const sheetsStatus = await sheetsService.initialize();
           
+          console.log("AuthProvider: Service status", { drive: driveStatus, gmail: gmailStatus, sheets: sheetsStatus });
+          
           setServiceStatus({
             drive: driveStatus,
             gmail: gmailStatus,
             sheets: sheetsStatus
           });
+        } else {
+          console.log("AuthProvider: Could not obtain valid access token");
         }
       } catch (error) {
-        console.error("Error checking authentication:", error);
+        console.error("AuthProvider: Error checking authentication:", error);
       } finally {
         setIsLoading(false);
       }
@@ -98,11 +109,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const signIn = async () => {
+    console.log("AuthProvider: Initiating sign in process");
     // Redirect to Google Auth
     window.location.href = getGoogleAuthUrl();
   };
 
   const signOut = async () => {
+    console.log("AuthProvider: Signing out user");
     setIsLoading(true);
     try {
       // Clear tokens
@@ -116,27 +129,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         drive: false,
         sheets: false,
       });
+      console.log("AuthProvider: User signed out successfully");
     } catch (error) {
-      console.error("Error signing out:", error);
+      console.error("AuthProvider: Error signing out:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
   const refreshToken = async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      console.log("AuthProvider: Cannot refresh token, user not authenticated");
+      return;
+    }
     
+    console.log("AuthProvider: Refreshing token");
     setIsLoading(true);
     try {
       const tokens = getStoredTokens();
       if (!tokens || !tokens.refresh_token) {
+        console.error("AuthProvider: No refresh token available");
         throw new Error("No refresh token available");
       }
       
       // Refresh the token
+      console.log("AuthProvider: Attempting to refresh token");
       await refreshAccessToken(tokens.refresh_token);
       
       // Re-initialize services
+      console.log("AuthProvider: Reinitializing services after token refresh");
       const driveService = EnhancedDriveService.getInstance();
       const gmailService = GmailService.getInstance();
       const sheetsService = SheetsService.getInstance();
@@ -150,10 +171,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         gmail: gmailStatus,
         sheets: sheetsStatus
       });
+      console.log("AuthProvider: Token refreshed and services reinitialized successfully");
     } catch (error) {
-      console.error("Error refreshing token:", error);
+      console.error("AuthProvider: Error refreshing token:", error);
       
       // If refreshing fails, sign out
+      console.log("AuthProvider: Token refresh failed, signing out user");
       await signOut();
     } finally {
       setIsLoading(false);
