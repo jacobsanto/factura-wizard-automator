@@ -73,22 +73,52 @@ export const getValidAccessToken = async (): Promise<string | null> => {
  * This helps users recover from broken auth states
  */
 export const checkAndFixAuthState = (): boolean => {
-  const tokens = getStoredTokens();
-  
-  // Check for partial/corrupt token state
-  if (!tokens || 
-      (tokens && !tokens.refresh_token) || 
-      (tokens && !tokens.access_token)) {
+  try {
+    const tokens = getStoredTokens();
     
-    console.log("Auth validation: Detected broken authentication state, clearing tokens");
+    // Check for partial/corrupt token state
+    if (!tokens || 
+        (tokens && !tokens.refresh_token) || 
+        (tokens && !tokens.access_token)) {
+      
+      console.log("Auth validation: Detected broken authentication state, clearing tokens");
+      
+      // Clear any existing tokens to force a clean re-login
+      localStorage.removeItem("google_tokens");
+      localStorage.removeItem("google_user");
+      localStorage.removeItem("user");
+      
+      return false;
+    }
     
-    // Clear any existing tokens to force a clean re-login
+    // Check for potentially corrupted tokens or invalid format
+    if (tokens) {
+      try {
+        // Just try to access some properties to validate structure
+        const testAccessToken = tokens.access_token;
+        const testRefreshToken = tokens.refresh_token;
+        console.log("Auth validation: Token structure seems valid");
+      } catch (error) {
+        console.error("Auth validation: Token structure validation failed:", error);
+        
+        // Clear corrupted tokens
+        localStorage.removeItem("google_tokens");
+        localStorage.removeItem("google_user");
+        localStorage.removeItem("user");
+        
+        return false;
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Auth validation: Unexpected error during auth check:", error);
+    
+    // Clear everything on unexpected error
     localStorage.removeItem("google_tokens");
     localStorage.removeItem("google_user");
     localStorage.removeItem("user");
     
     return false;
   }
-  
-  return true;
 };

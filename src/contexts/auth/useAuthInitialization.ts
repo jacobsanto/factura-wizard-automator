@@ -30,6 +30,18 @@ export const useAuthInitialization = ({
 
   // Check if user is authenticated on component mount
   useEffect(() => {
+    // Add a safety timeout to prevent infinite loading
+    const safetyTimeout = setTimeout(() => {
+      console.log("AuthProvider: Safety timeout triggered after 10 seconds");
+      setIsLoading(false);
+      // Show a toast to inform the user
+      toast({
+        variant: "destructive",
+        title: "Σφάλμα φόρτωσης",
+        description: "Η διαδικασία φόρτωσης πήρε πολύ χρόνο. Παρακαλώ ανανεώστε τη σελίδα ή συνδεθείτε ξανά."
+      });
+    }, 10000); // 10 second timeout
+
     const checkAuth = async () => {
       console.log("AuthProvider: Checking authentication status...");
       setIsLoading(true);
@@ -39,6 +51,7 @@ export const useAuthInitialization = ({
         if (!isAuthStateValid) {
           console.log("AuthProvider: Auth state was invalid and has been reset");
           setIsLoading(false);
+          clearTimeout(safetyTimeout);
           return;
         }
         
@@ -47,6 +60,7 @@ export const useAuthInitialization = ({
         if (!tokens) {
           console.log("AuthProvider: No tokens found in storage");
           setIsLoading(false);
+          clearTimeout(safetyTimeout);
           return;
         }
         
@@ -167,10 +181,14 @@ export const useAuthInitialization = ({
           description: "Προέκυψε σφάλμα κατά τον έλεγχο της πιστοποίησης.",
         });
       } finally {
+        clearTimeout(safetyTimeout); // Clear the safety timeout when auth check completes
         setIsLoading(false);
       }
     };
     
     checkAuth();
+
+    // Clean up the timeout when component unmounts
+    return () => clearTimeout(safetyTimeout);
   }, [setIsAuthenticated, setIsLoading, setUser, setServiceStatus, extractUserInfo, toast]);
 };
