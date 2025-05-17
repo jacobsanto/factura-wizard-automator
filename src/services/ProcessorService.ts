@@ -1,7 +1,9 @@
+
 import { AttachmentData, DocumentData, ProcessingStatus } from "@/types";
 import { GmailService } from "./GmailService";
 import { EnhancedDriveService } from "./drive";
 import { SheetsService } from "./SheetsService";
+import { LoggingService } from "./LoggingService";
 import { generateInvoiceFilename, generateDrivePath, joinPathSegments } from "./drive/naming";
 
 export class ProcessorService {
@@ -9,11 +11,13 @@ export class ProcessorService {
   private gmailService: GmailService;
   private driveService: EnhancedDriveService;
   private sheetsService: SheetsService;
+  private loggingService: LoggingService;
 
   private constructor() {
     this.gmailService = GmailService.getInstance();
     this.driveService = EnhancedDriveService.getInstance();
     this.sheetsService = SheetsService.getInstance();
+    this.loggingService = LoggingService.getInstance();
   }
 
   public static getInstance(): ProcessorService {
@@ -92,6 +96,7 @@ export class ProcessorService {
     data?: DocumentData;
     targetPath?: string;
     newFilename?: string;
+    driveFileId?: string;
     message?: string;
   }> {
     try {
@@ -109,38 +114,86 @@ export class ProcessorService {
       updateCallback({ status: "processing", message: "Εξαγωγή δεδομένων..." });
       const extractedData = await this.extractDataFromPdf(pdfBlob);
       
-      // Generate new filename
-      const newFilename = await this.driveService.generateFilename(extractedData);
+      // Try to use the streamlined upload function first
+      updateCallback({ status: "processing", message: "Μεταφόρτωση αρχείου στο Drive..." });
       
-      // Determine target folder using the enhanced path generation
-      updateCallback({ status: "processing", message: "Προετοιμασία αποθήκευσης..." });
-      
-      // Generate path segments using the new method
-      const pathSegments = generateDrivePath({
-        clientVat: extractedData.vatNumber,
-        clientName: extractedData.clientName || "Άγνωστος Πελάτης",
-        issuer: extractedData.supplier,
-        date: extractedData.date
-      });
-      
-      const targetFolder = joinPathSegments(pathSegments);
-      
-      // Create folder structure if it doesn't exist
-      const folderId = await this.driveService.getOrCreateFolder(targetFolder);
-      
-      // Upload file
-      updateCallback({ status: "processing", message: "Μεταφόρτωση αρχείου..." });
-      await this.driveService.uploadFile(targetFolder, newFilename, pdfBlob);
-      
-      // Success
-      updateCallback({ status: "success", message: "Επιτυχής επεξεργασία" });
-      
-      return {
-        success: true,
-        data: extractedData,
-        targetPath: targetFolder,
-        newFilename: newFilename
-      };
+      try {
+        // Use the new direct upload method
+        const uploadResult = await this.driveService.uploadInvoiceToDrive({
+          file: pdfBlob,
+          clientVat: extractedData.vatNumber,
+          clientName: extractedData.clientName || "Άγνωστος Πελάτης",
+          issuer: extractedData.supplier,
+          invoiceNumber: extractedData.documentNumber,
+          date: extractedData.date,
+          amount: extractedData.amount.toString(),
+          currency: extractedData.currency
+        });
+        
+        // Log the successful upload
+        this.loggingService.logUploadFromDoc(
+          extractedData, 
+          uploadResult.name, 
+          uploadResult.id
+        );
+        
+        // Success
+        updateCallback({ 
+          status: "success", 
+          message: "Επιτυχής επεξεργασία και αποστολή" 
+        });
+        
+        return {
+          success: true,
+          data: extractedData,
+          driveFileId: uploadResult.id,
+          newFilename: uploadResult.name
+        };
+      } catch (directUploadError) {
+        console.warn("Direct upload failed, falling back to legacy method:", directUploadError);
+        
+        // Fall back to the legacy upload method
+        updateCallback({ status: "processing", message: "Προετοιμασία αποθήκευσης..." });
+        
+        // Generate new filename
+        const newFilename = await this.driveService.generateFilename(extractedData);
+        
+        // Generate path segments using the new method
+        const pathSegments = generateDrivePath({
+          clientVat: extractedData.vatNumber,
+          clientName: extractedData.clientName || "Άγνωστος Πελάτης",
+          issuer: extractedData.supplier,
+          date: extractedData.date
+        });
+        
+        const targetFolder = joinPathSegments(pathSegments);
+        
+        // Create folder structure if it doesn't exist
+        const folderId = await this.driveService.getOrCreateFolder(targetFolder);
+        
+        // Upload file
+        updateCallback({ status: "processing", message: "Μεταφόρτωση αρχείου..." });
+        const fileId = await this.driveService.uploadFile(targetFolder, newFilename, pdfBlob);
+        
+        // Log the successful upload
+        this.loggingService.logUploadFromDoc(
+          extractedData, 
+          newFilename, 
+          fileId,
+          targetFolder
+        );
+        
+        // Success
+        updateCallback({ status: "success", message: "Επιτυχής επεξεργασία" });
+        
+        return {
+          success: true,
+          data: extractedData,
+          targetPath: targetFolder,
+          newFilename: newFilename,
+          driveFileId: fileId
+        };
+      }
     } catch (error) {
       console.error("Error processing attachment:", error);
       updateCallback({ status: "error", message: "Σφάλμα επεξεργασίας" });

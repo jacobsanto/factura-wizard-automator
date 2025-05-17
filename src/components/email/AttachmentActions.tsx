@@ -19,6 +19,21 @@ const AttachmentActions: React.FC<AttachmentActionsProps> = ({
   attachmentId,
   onProcess
 }) => {
+  // Check if message contains a Drive file ID
+  const extractDriveLink = (message?: string): string | null => {
+    if (!message) return null;
+    // Try to extract Google Drive ID from message if it looks like one
+    const possibleId = message.trim();
+    if (possibleId.length > 20 && !possibleId.includes(" ")) {
+      return `https://drive.google.com/file/d/${possibleId}`;
+    }
+    return null;
+  };
+
+  const driveLink = processingStatus.status === "success" 
+    ? extractDriveLink(processingStatus.message) 
+    : null;
+
   switch (processingStatus.status) {
     case "idle":
       return (
@@ -36,7 +51,17 @@ const AttachmentActions: React.FC<AttachmentActionsProps> = ({
       return (
         <div className="flex items-center justify-end text-green-500">
           <CheckCircle className="h-5 w-5 mr-1" />
-          <span>Επιτυχία</span>
+          <span className="mr-2">Επιτυχία</span>
+          {driveLink && (
+            <a 
+              href={driveLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 underline text-xs"
+            >
+              Drive
+            </a>
+          )}
         </div>
       );
     case "error":

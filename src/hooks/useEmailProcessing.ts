@@ -57,7 +57,7 @@ export const useEmailProcessing = (emails: EmailData[], updateEmail: (email: Ema
         }
       );
       
-      if (result.success && result.data && result.targetPath && result.newFilename) {
+      if (result.success && result.data) {
         // If successful, update with extracted data
         const finalUpdate = { ...updatedEmail };
         finalUpdate.attachments[attachmentIndex] = {
@@ -66,7 +66,9 @@ export const useEmailProcessing = (emails: EmailData[], updateEmail: (email: Ema
           extractedData: result.data,
           processingStatus: { 
             status: "success", 
-            message: `Μεταφέρθηκε στον φάκελο: ${result.targetPath}` 
+            message: result.driveFileId 
+              ? `Μεταφέρθηκε και αποθηκεύτηκε ως ${result.newFilename}`
+              : `Σφάλμα: Αδυναμία αποθήκευσης στο Drive`
           }
         };
         
@@ -74,8 +76,8 @@ export const useEmailProcessing = (emails: EmailData[], updateEmail: (email: Ema
         if (settings.enableSheets && settings.sheetsId) {
           await processorService.logToSheet(
             result.data,
-            result.targetPath,
-            result.newFilename,
+            result.targetPath || "",
+            result.newFilename || "",
             settings.sheetsId
           );
         }
@@ -83,9 +85,15 @@ export const useEmailProcessing = (emails: EmailData[], updateEmail: (email: Ema
         // Update UI
         updateEmail(finalUpdate);
         
+        const driveLink = result.driveFileId
+          ? `https://drive.google.com/file/d/${result.driveFileId}`
+          : undefined;
+        
         toast({
           title: "Επιτυχής επεξεργασία",
-          description: `Το αρχείο αποθηκεύτηκε ως ${result.newFilename}`
+          description: result.driveFileId
+            ? `Το αρχείο αποθηκεύτηκε ως ${result.newFilename}`
+            : "Το αρχείο επεξεργάστηκε αλλά δεν αποθηκεύτηκε στο Drive"
         });
       } else {
         // If failed, update with error
