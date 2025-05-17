@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SettingsPanel from "./SettingsPanel";
 import DashboardStats from "./dashboard/DashboardStats";
@@ -7,10 +7,23 @@ import DashboardLoader from "./dashboard/DashboardLoader";
 import DashboardEmailSection from "./dashboard/DashboardEmailSection";
 import { useServiceInitialization } from "./dashboard/useServiceInitialization";
 import { useEmailManagement } from "./dashboard/useEmailManagement";
+import { useLocation } from "react-router-dom";
 
 const Dashboard: React.FC = () => {
   const { isInitializing } = useServiceInitialization();
   const { emails, isLoading, stats, fetchEmails, updateEmailData } = useEmailManagement();
+  const location = useLocation();
+  const [activeTab, setActiveTab] = React.useState<string>("emails");
+
+  // Check URL for tab parameter
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const tabParam = searchParams.get("tab");
+    
+    if (tabParam === "settings") {
+      setActiveTab("settings");
+    }
+  }, [location]);
 
   if (isInitializing) {
     return <DashboardLoader />;
@@ -20,7 +33,7 @@ const Dashboard: React.FC = () => {
     <div className="p-6 space-y-6">
       <DashboardStats stats={stats} />
 
-      <Tabs defaultValue="emails" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="emails">Επεξεργασία Emails</TabsTrigger>
           <TabsTrigger value="settings">Ρυθμίσεις</TabsTrigger>

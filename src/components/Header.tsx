@@ -11,9 +11,26 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { LogOut, Settings, HelpCircle, FileText } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const Header: React.FC = () => {
   const { isAuthenticated, user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleSettingsClick = () => {
+    // If we're already on the home page, we can simply change the tab
+    if (location.pathname === '/') {
+      // Find the tabs element and programmatically click on the settings tab
+      const settingsTab = document.querySelector('button[value="settings"]') as HTMLButtonElement;
+      if (settingsTab) {
+        settingsTab.click();
+      }
+    } else {
+      // Navigate to home page with settings tab query parameter
+      navigate('/?tab=settings');
+    }
+  };
 
   return (
     <header className="bg-white shadow-sm border-b px-6 py-3">
@@ -46,7 +63,7 @@ const Header: React.FC = () => {
                     <p className="text-xs text-muted-foreground">{user?.email || "user@example.com"}</p>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="cursor-pointer">
+                  <DropdownMenuItem onClick={handleSettingsClick} className="cursor-pointer">
                     <Settings className="h-4 w-4 mr-2" />
                     <span>Ρυθμίσεις</span>
                   </DropdownMenuItem>

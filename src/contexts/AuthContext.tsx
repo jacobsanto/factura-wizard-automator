@@ -11,6 +11,7 @@ import {
 import { EnhancedDriveService } from "@/services/drive";
 import { GmailService } from "@/services/GmailService";
 import { SheetsService } from "@/services/SheetsService";
+import jwt_decode from "jwt-decode";
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -32,6 +33,13 @@ export const useAuth = () => {
   return context;
 };
 
+interface GoogleUserInfo {
+  name: string;
+  email: string;
+  picture: string;
+  sub: string;
+}
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,6 +49,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     drive: false,
     sheets: false,
   });
+
+  // Extract user information from ID token
+  const extractUserInfo = (idToken: string): GoogleUserInfo | null => {
+    try {
+      const decoded = jwt_decode(idToken) as any;
+      return {
+        name: decoded.name || "Google User",
+        email: decoded.email || "",
+        picture: decoded.picture || "",
+        sub: decoded.sub || ""
+      };
+    } catch (error) {
+      console.error("Error decoding ID token:", error);
+      return null;
+    }
+  };
 
   // Check if user is authenticated on component mount
   useEffect(() => {
@@ -61,12 +85,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           // If we have a valid token, initialize services
           setIsAuthenticated(true);
           
-          // For a real implementation, we would fetch user info here
-          setUser({
-            name: "Google User",
-            email: "user@example.com",
-            picture: "https://via.placeholder.com/40"
-          });
+          // Extract user info from ID token if available
+          if (tokens.id_token) {
+            const userInfo = extractUserInfo(tokens.id_token);
+            if (userInfo) {
+              setUser(userInfo);
+            }
+          } else {
+            // Fallback for backward compatibility
+            setUser({
+              name: "Google User",
+              email: "user@example.com",
+              picture: "https://via.placeholder.com/40"
+            });
+          }
           
           // Initialize services
           const driveService = EnhancedDriveService.getInstance();
