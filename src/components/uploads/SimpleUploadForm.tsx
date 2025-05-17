@@ -1,70 +1,69 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { uploadFile } from "@/helpers";
-import { logUpload } from "@/helpers/logHelpers";
-import UploadStatus from "../uploads/UploadStatus";
+import { extractInvoiceDataFromPdf } from "@/api/gptApi";
+import { uploadInvoiceToDrive } from "@/helpers/uploadHelpers";
+import { Loader, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import UploadStatus from "@/components/uploads/UploadStatus";
 
 const SimpleUploadForm: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
-  const [clientVat, setClientVat] = useState("");
-  const [clientName, setClientName] = useState("");
-  const [issuer, setIssuer] = useState("");
-  const [invoiceNumber, setInvoiceNumber] = useState("");
-  const [date, setDate] = useState("");
-  const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState("€");
-  const [uploading, setUploading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<null | "success" | "error">(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<"success" | "error" | null>(null);
   const [driveLink, setDriveLink] = useState<string | null>(null);
   const { toast } = useToast();
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
+      setUploadStatus(null);
     }
   };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!file) return;
-
-    setUploading(true);
+  
+  const handleQuickUpload = async () => {
+    if (!file) {
+      toast({
+        variant: "destructive",
+        title: "Σφάλμα",
+        description: "Παρακαλώ επιλέξτε ένα αρχείο PDF πρώτα",
+      });
+      return;
+    }
+    
+    setIsUploading(true);
     setUploadStatus(null);
     
     try {
-      const result = await uploadFile(file, {
-        clientVat,
-        clientName,
-        issuer,
-        invoiceNumber,
-        date,
-        amount,
-        currency
+      // Extract data using GPT
+      toast({
+        title: "Επεξεργασία",
+        description: "Αναλύουμε το PDF σας με AI...",
+      });
+      
+      const extractedData = await extractInvoiceDataFromPdf(file);
+      
+      // Upload to Drive
+      toast({
+        title: "Αποστολή",
+        description: "Ανεβάζουμε το αρχείο στο Google Drive...",
+      });
+      
+      const result = await uploadInvoiceToDrive(file, {
+        ...extractedData,
+        // Convert string amount to number
+        amount: typeof extractedData.amount === 'string' 
+          ? parseFloat(extractedData.amount) 
+          : extractedData.amount,
+        supplier: extractedData.issuer,
       });
       
       if (result.success && result.fileId) {
-        // Log the upload - we've removed result.path here since it no longer exists
-        logUpload(
-          file.name,
-          clientVat,
-          clientName,
-          issuer,
-          invoiceNumber,
-          date,
-          amount,
-          currency,
-          result.fileId
-        );
-        
         setUploadStatus("success");
         setDriveLink(`https://drive.google.com/file/d/${result.fileId}`);
         toast({
-          title: "Επιτυχία",
-          description: "Το αρχείο ανέβηκε επιτυχώς στο Google Drive",
+          title: "Επιτυχία!",
+          description: "Το αρχείο αναλύθηκε και ανέβηκε επιτυχώς",
         });
       } else {
         setUploadStatus("error");
@@ -75,120 +74,58 @@ const SimpleUploadForm: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error("Upload error:", error);
+      console.error("Quick upload error:", error);
       setUploadStatus("error");
       toast({
         variant: "destructive",
         title: "Σφάλμα",
-        description: "Υπήρξε πρόβλημα κατά το ανέβασμα του αρχείου",
+        description: "Υπήρξε πρόβλημα κατά την επεξεργασία ή το ανέβασμα του αρχείου",
       });
     } finally {
-      setUploading(false);
+      setIsUploading(false);
     }
   };
 
   return (
-    <div className="p-4 bg-white rounded-lg border">
-      <h2 className="text-lg font-medium mb-4">Αποστολή Παραστατικού</h2>
+    <div className="space-y-4">
+      <input 
+        type="file" 
+        id="quick-file" 
+        accept=".pdf" 
+        onChange={handleFileChange}
+        className="block w-full text-sm text-gray-500
+          file:mr-4 file:py-2 file:px-4
+          file:rounded file:border-0
+          file:text-sm file:font-semibold
+          file:bg-blue-50 file:text-blue-700
+          hover:file:bg-blue-100"
+      />
       
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="file">Αρχείο</Label>
-          <Input id="file" type="file" accept=".pdf" onChange={handleFileChange} />
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="clientVat">ΑΦΜ Πελάτη</Label>
-            <Input 
-              id="clientVat" 
-              value={clientVat} 
-              onChange={(e) => setClientVat(e.target.value)}
-              placeholder="π.χ. 123456789"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="clientName">Όνομα Πελάτη</Label>
-            <Input 
-              id="clientName" 
-              value={clientName} 
-              onChange={(e) => setClientName(e.target.value)}
-              placeholder="π.χ. Επωνυμία Πελάτη"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="issuer">Προμηθευτής</Label>
-            <Input 
-              id="issuer" 
-              value={issuer} 
-              onChange={(e) => setIssuer(e.target.value)}
-              placeholder="π.χ. Όνομα Προμηθευτή"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="invoiceNumber">Αριθμός Τιμολογίου</Label>
-            <Input 
-              id="invoiceNumber" 
-              value={invoiceNumber} 
-              onChange={(e) => setInvoiceNumber(e.target.value)}
-              placeholder="π.χ. ΤΔΑ-12345"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="date">Ημερομηνία</Label>
-            <Input 
-              id="date" 
-              type="date" 
-              value={date} 
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-2">
-              <Label htmlFor="amount">Ποσό</Label>
-              <Input 
-                id="amount" 
-                type="number" 
-                step="0.01" 
-                value={amount} 
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="currency">Νόμισμα</Label>
-              <Input 
-                id="currency" 
-                value={currency} 
-                onChange={(e) => setCurrency(e.target.value)}
-                placeholder="€"
-              />
-            </div>
-          </div>
-        </div>
-        
-        <Button 
-          type="submit" 
-          className="w-full" 
-          disabled={uploading || !file}
-        >
-          {uploading ? "Αποστολή..." : "Αποστολή στο Drive"}
-        </Button>
-        
-        {uploadStatus && (
-          <UploadStatus 
-            status={uploadStatus} 
-            fileLink={driveLink || undefined} 
-            message={uploadStatus === "error" ? "Η αποστολή απέτυχε. Παρακαλώ προσπαθήστε ξανά." : undefined}
-          />
+      <Button 
+        onClick={handleQuickUpload}
+        disabled={isUploading || !file}
+        className="w-full"
+      >
+        {isUploading ? (
+          <>
+            <Loader className="mr-2 h-4 w-4 animate-spin" />
+            Αναλύουμε και ανεβάζουμε...
+          </>
+        ) : (
+          <>
+            <Upload className="mr-2 h-4 w-4" />
+            Αυτόματο Ανέβασμα στο Drive
+          </>
         )}
-      </form>
+      </Button>
+      
+      {uploadStatus && (
+        <UploadStatus 
+          status={uploadStatus} 
+          fileLink={driveLink || undefined}
+          message={uploadStatus === "error" ? "Η αποστολή απέτυχε. Παρακαλώ προσπαθήστε ξανά." : undefined}
+        />
+      )}
     </div>
   );
 };

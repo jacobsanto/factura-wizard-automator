@@ -5,6 +5,7 @@ import SettingsPanel from "./SettingsPanel";
 import DashboardStats from "./dashboard/DashboardStats";
 import DashboardLoader from "./dashboard/DashboardLoader";
 import DashboardEmailSection from "./dashboard/DashboardEmailSection";
+import DashboardUploadSection from "./dashboard/DashboardUploadSection";
 import UploadsTable from "./uploads/UploadsTable";
 import { useServiceInitialization } from "./dashboard/useServiceInitialization";
 import { useEmailManagement } from "./dashboard/useEmailManagement";
@@ -25,6 +26,8 @@ const Dashboard: React.FC = () => {
       setActiveTab("settings");
     } else if (tabParam === "uploads") {
       setActiveTab("uploads");
+    } else if (tabParam === "upload") {
+      setActiveTab("upload");
     }
   }, [location]);
 
@@ -39,6 +42,7 @@ const Dashboard: React.FC = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="emails">Επεξεργασία Emails</TabsTrigger>
+          <TabsTrigger value="upload">Χειροκίνητο Ανέβασμα</TabsTrigger>
           <TabsTrigger value="uploads">Ιστορικό Αποστολών</TabsTrigger>
           <TabsTrigger value="settings">Ρυθμίσεις</TabsTrigger>
         </TabsList>
@@ -50,6 +54,12 @@ const Dashboard: React.FC = () => {
             fetchEmails={fetchEmails}
             isLoading={isLoading}
           />
+        </TabsContent>
+        
+        <TabsContent value="upload">
+          <div className="bg-white rounded-lg border p-6">
+            <DashboardUploadSection />
+          </div>
         </TabsContent>
         
         <TabsContent value="uploads">

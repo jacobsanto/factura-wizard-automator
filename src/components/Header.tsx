@@ -10,7 +10,13 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { LogOut, Settings, HelpCircle } from "lucide-react";
+import { 
+  NavigationMenu,
+  NavigationMenuList,
+  NavigationMenuItem,
+  NavigationMenuLink
+} from "@/components/ui/navigation-menu";
+import { LogOut, Settings, HelpCircle, Home, Upload } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getCurrentUser } from "@/utils/userUtils";
 
@@ -20,18 +26,12 @@ const Header: React.FC = () => {
   const location = useLocation();
   const currentUser = getCurrentUser();
 
+  const handleNavigate = (tab: string) => {
+    navigate(`/?tab=${tab}`);
+  };
+
   const handleSettingsClick = () => {
-    // If we're already on the home page, we can simply change the tab
-    if (location.pathname === '/') {
-      // Find the tabs element and programmatically click on the settings tab
-      const settingsTab = document.querySelector('button[value="settings"]') as HTMLButtonElement;
-      if (settingsTab) {
-        settingsTab.click();
-      }
-    } else {
-      // Navigate to home page with settings tab query parameter
-      navigate('/?tab=settings');
-    }
+    navigate('/?tab=settings');
   };
 
   // Use either the currentUser from our utility or the user from auth context
@@ -54,6 +54,33 @@ const Header: React.FC = () => {
         <div className="flex items-center space-x-4">
           {isAuthenticated && (
             <>
+              <NavigationMenu>
+                <NavigationMenuList>
+                  <NavigationMenuItem>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-gray-600 hover:text-brand-blue"
+                      onClick={() => handleNavigate('emails')}
+                    >
+                      <Home className="h-4 w-4 mr-2" />
+                      Αρχική
+                    </Button>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-gray-600 hover:text-brand-blue"
+                      onClick={() => handleNavigate('upload')}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Ανέβασμα
+                    </Button>
+                  </NavigationMenuItem>
+                </NavigationMenuList>
+              </NavigationMenu>
+              
               <Button variant="outline" size="sm" className="text-brand-blue">
                 <HelpCircle className="h-4 w-4 mr-2" />
                 Βοήθεια
