@@ -1,8 +1,8 @@
-
 /**
  * Google Authentication Service
  * Handles OAuth flow and token management
  */
+import { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } from '../env';
 
 // OAuth endpoints
 const GOOGLE_AUTH_URI = "https://accounts.google.com/o/oauth2/v2/auth";
@@ -33,15 +33,12 @@ interface GoogleTokens {
  * Generates the Google OAuth authorization URL
  */
 export const getGoogleAuthUrl = () => {
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  const redirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
-  
-  if (!clientId || !redirectUri) {
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_REDIRECT_URI) {
     console.error("Missing required environment variables for Google OAuth");
     throw new Error("OAuth configuration missing");
   }
 
-  return `${GOOGLE_AUTH_URI}?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${encodeURIComponent(SCOPES)}&access_type=offline&prompt=consent`;
+  return `${GOOGLE_AUTH_URI}?response_type=code&client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${GOOGLE_REDIRECT_URI}&scope=${encodeURIComponent(SCOPES)}&access_type=offline&prompt=consent`;
 };
 
 /**
@@ -49,11 +46,7 @@ export const getGoogleAuthUrl = () => {
  */
 export const exchangeCodeForTokens = async (code: string): Promise<GoogleTokens | null> => {
   try {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    const clientSecret = import.meta.env.VITE_GOOGLE_CLIENT_SECRET;
-    const redirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
-    
-    if (!clientId || !clientSecret || !redirectUri) {
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI) {
       console.error("Missing required environment variables for Google OAuth");
       return null;
     }
@@ -65,9 +58,9 @@ export const exchangeCodeForTokens = async (code: string): Promise<GoogleTokens 
       },
       body: new URLSearchParams({
         code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        redirect_uri: GOOGLE_REDIRECT_URI,
         grant_type: "authorization_code",
       }),
     });
@@ -97,10 +90,7 @@ export const exchangeCodeForTokens = async (code: string): Promise<GoogleTokens 
  */
 export const refreshAccessToken = async (refreshToken: string): Promise<GoogleTokens | null> => {
   try {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    const clientSecret = import.meta.env.VITE_GOOGLE_CLIENT_SECRET;
-    
-    if (!clientId || !clientSecret) {
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
       console.error("Missing required environment variables for Google OAuth");
       return null;
     }
@@ -111,8 +101,8 @@ export const refreshAccessToken = async (refreshToken: string): Promise<GoogleTo
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
         refresh_token: refreshToken,
         grant_type: "refresh_token",
       }),
