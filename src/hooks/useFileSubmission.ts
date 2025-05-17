@@ -2,7 +2,8 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { uploadFile } from "@/helpers";
-import { logToGoogleSheet, logUpload } from "@/helpers/logHelpers";
+import { logUpload } from "@/helpers/logHelpers";
+import { useGoogleSheetsLogger } from "@/hooks/useGoogleSheetsLogger";
 
 interface UploadOptions {
   file: File | null;
@@ -30,15 +31,29 @@ export function useFileSubmission(): UseFileSubmissionReturn {
   const [uploadStatus, setUploadStatus] = useState<null | "success" | "error">(null);
   const [driveLink, setDriveLink] = useState<string | null>(null);
   const { toast } = useToast();
+  const sheetsLogger = useGoogleSheetsLogger();
 
   const handleUpload = async (e: React.FormEvent, options: UploadOptions) => {
     e.preventDefault();
-    if (!options.file) return;
+    
+    console.log("File upload initiated", {
+      hasFile: !!options.file,
+      fileName: options.file?.name,
+      fileSize: options.file?.size,
+      useSheets: options.useSheets,
+      hasSheetsId: !!options.spreadsheetId
+    });
+    
+    if (!options.file) {
+      console.log("Upload aborted: No file provided");
+      return;
+    }
 
     setUploading(true);
     setUploadStatus(null);
 
     try {
+      console.log("Starting file upload to Google Drive");
       const result = await uploadFile(options.file, {
         clientVat: options.clientVat,
         clientName: options.clientName,
@@ -50,7 +65,8 @@ export function useFileSubmission(): UseFileSubmissionReturn {
       });
 
       if (result.success && result.fileId) {
-        // Log the upload
+        console.log("File uploaded successfully to Drive", { fileId: result.fileId });
+        // Log the upload to local storage
         logUpload(
           options.file.name,
           options.clientVat,
@@ -68,8 +84,13 @@ export function useFileSubmission(): UseFileSubmissionReturn {
         
         // If Google Sheets logging is enabled
         if (options.useSheets && options.spreadsheetId) {
+          console.log("Google Sheets logging requested", { 
+            spreadsheetId: options.spreadsheetId,
+            sheetName: options.sheetName
+          });
+          
           try {
-            await logToGoogleSheet({
+            const sheetLoggingSuccess = await sheetsLogger.logToSheet({
               spreadsheetId: options.spreadsheetId,
               sheetName: options.sheetName,
               values: [
@@ -86,12 +107,21 @@ export function useFileSubmission(): UseFileSubmissionReturn {
               ]
             });
             
-            toast({
-              title: "Επιτυχία",
-              description: "Το αρχείο καταγράφηκε επιτυχώς στο Google Sheets",
-            });
+            if (sheetLoggingSuccess) {
+              toast({
+                title: "Επιτυχία",
+                description: "Το αρχείο καταγράφηκε επιτυχώς στο Google Sheets",
+              });
+            } else {
+              console.warn("Sheet logging returned false, but no exception was thrown");
+              toast({
+                variant: "destructive",
+                title: "Προειδοποίηση",
+                description: "Το αρχείο ανέβηκε αλλά απέτυχε η καταγραφή στο Google Sheets",
+              });
+            }
           } catch (sheetError) {
-            console.error("Google Sheets logging error:", sheetError);
+            console.error("Exception during Google Sheets logging:", sheetError);
             toast({
               variant: "destructive",
               title: "Προειδοποίηση",
@@ -99,12 +129,17 @@ export function useFileSubmission(): UseFileSubmissionReturn {
             });
           }
         } else {
+          console.log("Google Sheets logging skipped", { 
+            useSheets: options.useSheets, 
+            hasSheetsId: !!options.spreadsheetId 
+          });
           toast({
             title: "Επιτυχία",
             description: "Το αρχείο ανέβηκε επιτυχώς στο Google Drive",
           });
         }
       } else {
+        console.error("Upload failed", result);
         setUploadStatus("error");
         toast({
           variant: "destructive",
@@ -113,7 +148,7 @@ export function useFileSubmission(): UseFileSubmissionReturn {
         });
       }
     } catch (error) {
-      console.error("Upload error:", error);
+      console.error("Exception during file upload:", error);
       setUploadStatus("error");
       toast({
         variant: "destructive",

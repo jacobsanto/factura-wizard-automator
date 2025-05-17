@@ -5,7 +5,6 @@
  */
 import { LoggingService, UploadLogEntry } from "@/services/LoggingService";
 import { DocumentData } from "@/types";
-import { getValidAccessToken } from "@/services/googleAuth";
 
 /**
  * Log an upload operation with document data
@@ -16,6 +15,11 @@ export const logDocumentUpload = (
   driveFileId: string,
   targetPath?: string
 ): void => {
+  console.log("Logging document upload to local storage", {
+    filename,
+    driveFileId,
+    targetPath
+  });
   const loggingService = LoggingService.getInstance();
   loggingService.logUploadFromDoc(docData, filename, driveFileId, targetPath);
 };
@@ -35,6 +39,13 @@ export const logUpload = (
   driveFileId: string,
   targetPath?: string
 ): void => {
+  console.log("Logging upload to local storage", {
+    filename,
+    clientVat,
+    clientName,
+    driveFileId,
+    targetPath
+  });
   const loggingService = LoggingService.getInstance();
   loggingService.logUpload({
     filename,
@@ -51,47 +62,10 @@ export const logUpload = (
 };
 
 /**
- * Log upload details to Google Sheets
- */
-export const logToGoogleSheet = async ({
-  spreadsheetId,
-  sheetName,
-  values,
-}: {
-  spreadsheetId: string;
-  sheetName: string;
-  values: string[];
-}): Promise<void> => {
-  const accessToken = await getValidAccessToken();
-  
-  if (!accessToken) {
-    throw new Error("No valid access token available");
-  }
-  
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${sheetName}!A1:append?valueInputOption=USER_ENTERED`;
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      values: [values],
-    }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    console.error("Error logging to Google Sheets:", errorData);
-    throw new Error("Failed to log to Google Sheets");
-  }
-};
-
-/**
  * Get recent upload logs
  */
 export const getRecentLogs = (limit: number = 20): UploadLogEntry[] => {
+  console.log(`Retrieving ${limit} recent logs from local storage`);
   const loggingService = LoggingService.getInstance();
   return loggingService.getRecentLogs(limit);
 };
@@ -100,6 +74,7 @@ export const getRecentLogs = (limit: number = 20): UploadLogEntry[] => {
  * Get all upload logs
  */
 export const getAllLogs = (): UploadLogEntry[] => {
+  console.log("Retrieving all logs from local storage");
   const loggingService = LoggingService.getInstance();
   return loggingService.getLogs();
 };
@@ -108,6 +83,7 @@ export const getAllLogs = (): UploadLogEntry[] => {
  * Clear all logs
  */
 export const clearLogs = (): void => {
+  console.log("Clearing all logs from local storage");
   const loggingService = LoggingService.getInstance();
   loggingService.clearLogs();
 };
