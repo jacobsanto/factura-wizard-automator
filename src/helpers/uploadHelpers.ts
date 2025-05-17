@@ -13,7 +13,7 @@ import { logDocumentUpload } from "./logHelpers";
 export const uploadInvoiceToDrive = async (
   file: Blob,
   docData: DocumentData
-): Promise<{ success: boolean; fileId?: string; fileName?: string; path?: string }> => {
+): Promise<{ success: boolean; fileId?: string; fileName?: string }> => {
   try {
     const driveService = EnhancedDriveService.getInstance();
     
@@ -34,8 +34,7 @@ export const uploadInvoiceToDrive = async (
     return {
       success: true,
       fileId: result.id,
-      fileName: result.name,
-      path: result.path
+      fileName: result.name
     };
   } catch (error) {
     console.error("Error uploading invoice:", error);
@@ -57,7 +56,7 @@ export const uploadFile = async (
     amount: string;
     currency: string;
   }
-): Promise<{ success: boolean; fileId?: string; fileName?: string; path?: string }> => {
+): Promise<{ success: boolean; fileId?: string; fileName?: string }> => {
   try {
     const driveService = EnhancedDriveService.getInstance();
     
@@ -69,8 +68,7 @@ export const uploadFile = async (
     return {
       success: true,
       fileId: result.id,
-      fileName: result.name,
-      path: result.path
+      fileName: result.name
     };
   } catch (error) {
     console.error("Error uploading file:", error);
