@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { exchangeCodeForTokens, storeTokens } from "@/services/googleAuth";
+import { exchangeCodeForTokens, storeTokens } from "@/services/google";
 import { useToast } from "@/hooks/use-toast";
 
 const OAuthCallback: React.FC = () => {
