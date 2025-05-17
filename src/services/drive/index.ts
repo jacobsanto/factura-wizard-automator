@@ -7,3 +7,4 @@ export * from './folders';
 export * from './files';
 export * from './naming';
 export * from './types';
+export * from './upload';

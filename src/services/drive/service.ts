@@ -8,6 +8,7 @@ import { DocumentData } from "@/types";
 import { findFolderByPath, createFolderPath, getOrCreateFolder } from './folders';
 import { uploadFile } from './files';
 import { generateFilename, determineTargetFolder } from './naming';
+import { uploadInvoiceToDrive, createDrivePathRecursively } from './upload';
 
 export class EnhancedDriveService {
   private static instance: EnhancedDriveService;
@@ -64,4 +65,8 @@ export class EnhancedDriveService {
   uploadFile = uploadFile;
   generateFilename = generateFilename;
   determineTargetFolder = determineTargetFolder;
+  
+  // Add the new upload functions
+  createDrivePathRecursively = createDrivePathRecursively;
+  uploadInvoiceToDrive = uploadInvoiceToDrive;
 }
