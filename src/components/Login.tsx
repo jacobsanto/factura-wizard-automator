@@ -1,12 +1,15 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { getGoogleAuthUrl, checkAndFixAuthState } from "@/services/google";
 import { useToast } from "@/hooks/use-toast";
 import { GOOGLE_REDIRECT_URI } from "@/env";
+
 const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const {
     toast
   } = useToast();
@@ -52,16 +55,41 @@ const Login: React.FC = () => {
     console.log("- Current pathname:", window.location.pathname);
     console.log("- Configured redirect URI:", GOOGLE_REDIRECT_URI);
   }, []);
+
   const handleSignIn = () => {
     setIsLoading(true);
+    console.log("Sign in button clicked at", new Date().toISOString());
+    setAuthError(null);
+    
     try {
       console.log("Login: Initiating Google sign-in flow...");
+      console.log("Login: Browser user agent:", navigator.userAgent);
+      
+      // Get the Google Auth URL
       const authUrl = getGoogleAuthUrl();
-      console.log("Login: Generated auth URL, redirecting user...");
+      console.log("Login: Generated auth URL, preparing to redirect...");
       console.log("Login: Redirect URI being used:", GOOGLE_REDIRECT_URI);
-      window.location.href = authUrl;
+      
+      // Add a short delay before redirecting to ensure logs are visible
+      // and to avoid potential rapid navigation issues
+      setTimeout(() => {
+        try {
+          console.log("Login: Redirecting to Google at", new Date().toISOString());
+          window.location.href = authUrl;
+        } catch (redirectError) {
+          console.error("Login: Error during redirect:", redirectError);
+          setAuthError(`Redirect error: ${redirectError instanceof Error ? redirectError.message : String(redirectError)}`);
+          setIsLoading(false);
+          toast({
+            variant: "destructive",
+            title: "Σφάλμα",
+            description: "Προέκυψε σφάλμα κατά την ανακατεύθυνση. Παρακαλώ δοκιμάστε ξανά."
+          });
+        }
+      }, 1000);
     } catch (error) {
       console.error("Login: Error generating Google auth URL:", error);
+      setAuthError(`URL generation error: ${error instanceof Error ? error.message : String(error)}`);
       setIsLoading(false);
       toast({
         variant: "destructive",
@@ -70,6 +98,7 @@ const Login: React.FC = () => {
       });
     }
   };
+
   const handleClearLocalStorage = () => {
     try {
       localStorage.clear();
@@ -86,6 +115,38 @@ const Login: React.FC = () => {
       });
     }
   };
+
+  const testGoogleConnection = () => {
+    setAuthError(null);
+    const startTime = Date.now();
+    console.log("Testing connection to accounts.google.com...");
+    
+    // Create an image element to test if Google can be reached
+    const img = new Image();
+    img.onload = () => {
+      const duration = Date.now() - startTime;
+      console.log(`Connection to Google successful (${duration}ms)`);
+      toast({
+        title: "Επιτυχής Σύνδεση",
+        description: `Η σύνδεση με το Google είναι εφικτή (${duration}ms).`
+      });
+    };
+    
+    img.onerror = (error) => {
+      const duration = Date.now() - startTime;
+      console.error(`Failed to connect to Google (${duration}ms)`, error);
+      setAuthError(`Failed to connect to Google after ${duration}ms`);
+      toast({
+        variant: "destructive",
+        title: "Σφάλμα Σύνδεσης",
+        description: "Δεν είναι δυνατή η σύνδεση με το accounts.google.com. Ελέγξτε τη σύνδεσή σας στο διαδίκτυο."
+      });
+    };
+    
+    // Use a Google favicon to test connection
+    img.src = "https://www.google.com/favicon.ico?" + new Date().getTime();
+  };
+
   return <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1 text-center">
@@ -122,14 +183,34 @@ const Login: React.FC = () => {
               </div>}
           </Button>
           
+          {/* Show connection test button */}
+          <Button 
+            onClick={testGoogleConnection} 
+            variant="outline" 
+            className="w-full text-sm"
+            disabled={isLoading}
+          >
+            Έλεγχος σύνδεσης με Google
+          </Button>
+          
+          {/* Error message display */}
+          {authError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+              <p className="font-medium mb-1">Σφάλμα σύνδεσης:</p>
+              <p>{authError}</p>
+            </div>
+          )}
+          
           {/* Debug info and tools */}
           {showDebug && <div className="w-full mt-4 p-3 bg-gray-100 rounded text-xs border border-gray-300">
               <h5 className="font-bold mb-2 text-center text-gray-700">Debug Information</h5>
               <div className="space-y-2">
                 <p><strong>Redirect URI:</strong> {GOOGLE_REDIRECT_URI}</p>
                 <p><strong>Current Origin:</strong> {window.location.origin}</p>
+                <p><strong>Current Path:</strong> {window.location.pathname}</p>
                 <p><strong>Has Tokens:</strong> {localStorage.getItem("google_tokens") ? "Yes" : "No"}</p>
                 <p><strong>Has User:</strong> {localStorage.getItem("google_user") ? "Yes" : "No"}</p>
+                <p><strong>Browser:</strong> {navigator.userAgent}</p>
                 <button onClick={handleClearLocalStorage} className="w-full mt-2 bg-red-100 text-red-700 hover:bg-red-200 py-1 rounded border border-red-300 text-sm">
                   Clear All Local Storage
                 </button>

@@ -10,25 +10,35 @@ const OAuthCallback: React.FC = () => {
   const { toast } = useToast();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorDetails, setErrorDetails] = useState<string>("");
+  const [processingSteps, setProcessingSteps] = useState<string[]>([]);
+  
+  // Add a function to log processing steps with timestamps
+  const logStep = (step: string) => {
+    const timestamp = new Date().toISOString().substring(11, 23); // HH:MM:SS.sss format
+    const logEntry = `${timestamp} - ${step}`;
+    console.log(logEntry);
+    setProcessingSteps(prev => [...prev, logEntry]);
+  };
   
   useEffect(() => {
     const processAuthCode = async () => {
       try {
+        logStep("OAuth callback page loaded");
+        
         // Get the auth code from URL
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get("code");
         const error = urlParams.get("error");
         
-        console.log("OAuth callback received:");
-        console.log("- Code exists:", !!code);
-        console.log("- Error:", error || "none");
-        console.log("- Full URL:", window.location.href);
-        console.log("- Current Origin:", window.location.origin);
-        console.log("- Expected redirect URI:", GOOGLE_REDIRECT_URI);
-        console.log("- Match?", window.location.origin + "/oauth2callback" === GOOGLE_REDIRECT_URI);
+        logStep("OAuth callback parameters processed");
+        logStep(`- Code exists: ${!!code}`);
+        logStep(`- Error: ${error || "none"}`);
+        logStep(`- Full URL: ${window.location.href}`);
+        logStep(`- Current Origin: ${window.location.origin}`);
+        logStep(`- Expected redirect URI: ${GOOGLE_REDIRECT_URI}`);
         
         if (error) {
-          console.error("Authentication error:", error);
+          logStep(`Authentication error received: ${error}`);
           setStatus("error");
           setErrorDetails(`Error: ${error}`);
           toast({
@@ -39,7 +49,9 @@ const OAuthCallback: React.FC = () => {
           
           // If the error is redirect_uri_mismatch, provide more detailed information
           if (error.includes("redirect_uri_mismatch") || urlParams.get("error_description")?.includes("redirect_uri_mismatch")) {
-            setErrorDetails(`Σφάλμα: redirect_uri_mismatch. Η διεύθυνση ανακατεύθυνσης που χρησιμοποιήθηκε (${window.location.origin}/oauth2callback) δεν έχει εγκριθεί στο Google Cloud Console.`);
+            const detailedError = `Σφάλμα: redirect_uri_mismatch. Η διεύθυνση ανακατεύθυνσης που χρησιμοποιήθηκε (${window.location.origin}/oauth2callback) δεν έχει εγκριθεί στο Google Cloud Console.`;
+            setErrorDetails(detailedError);
+            logStep(detailedError);
           }
           
           setTimeout(() => navigate("/"), 5000);
@@ -47,7 +59,7 @@ const OAuthCallback: React.FC = () => {
         }
         
         if (!code) {
-          console.error("No authentication code received");
+          logStep("No authentication code received");
           setStatus("error");
           setErrorDetails("No authentication code received");
           toast({
@@ -60,11 +72,12 @@ const OAuthCallback: React.FC = () => {
         }
         
         // Exchange the code for tokens
-        console.log("Attempting to exchange code for tokens...");
+        logStep("Attempting to exchange code for tokens...");
         const tokens = await exchangeCodeForTokens(code);
-        console.log("Token exchange result:", tokens ? "Successful" : "Failed");
+        logStep(`Token exchange result: ${tokens ? "Successful" : "Failed"}`);
         
         if (!tokens) {
+          logStep("Failed to exchange code for tokens");
           setStatus("error");
           setErrorDetails("Failed to exchange code for tokens");
           toast({
@@ -77,47 +90,53 @@ const OAuthCallback: React.FC = () => {
         }
         
         // Store the tokens
+        logStep("Storing tokens");
         storeTokens(tokens);
         
         // Fetch user info from Google API
         try {
-          console.log("Fetching user info with access token");
+          logStep("Fetching user info with access token");
           const userInfoResponse = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
             headers: {
               Authorization: `Bearer ${tokens.access_token}`,
             },
           });
           
+          logStep(`User info response status: ${userInfoResponse.status}`);
+          
           if (userInfoResponse.ok) {
             const userInfo = await userInfoResponse.json();
-            console.log("✅ User Info received:", userInfo.email);
+            logStep(`User Info received for: ${userInfo.email}`);
             
             // Store user info in localStorage
             localStorage.setItem("google_user", JSON.stringify(userInfo));
             // Also store in the "user" key for compatibility with other components
             localStorage.setItem("user", JSON.stringify(userInfo));
           } else {
-            console.error("Failed to fetch user info:", await userInfoResponse.text());
-            // Get the status code and content of the error response
-            console.error(`Status: ${userInfoResponse.status}, StatusText: ${userInfoResponse.statusText}`);
+            const responseText = await userInfoResponse.text();
+            logStep(`Failed to fetch user info: ${responseText}`);
+            logStep(`Status: ${userInfoResponse.status}, StatusText: ${userInfoResponse.statusText}`);
           }
         } catch (error) {
-          console.error("Error fetching user info:", error);
+          logStep(`Error fetching user info: ${error instanceof Error ? error.message : String(error)}`);
           // Continue with the flow even if user info fetch fails
         }
         
         // Signal success
         setStatus("success");
+        logStep("Authentication successful");
         toast({
           title: "Επιτυχής σύνδεση",
           description: "Συνδεθήκατε επιτυχώς στο Google.",
         });
         
         // Redirect to home page
+        logStep("Redirecting to home page");
         setTimeout(() => navigate("/"), 1500);
       } catch (error) {
-        console.error("Error processing OAuth callback:", error);
-        setErrorDetails(error instanceof Error ? error.message : String(error));
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logStep(`Error processing OAuth callback: ${errorMessage}`);
+        setErrorDetails(errorMessage);
         setStatus("error");
         toast({
           title: "Σφάλμα σύνδεσης",
@@ -166,6 +185,18 @@ const OAuthCallback: React.FC = () => {
                 </p>
               )}
             </>
+          )}
+          
+          {/* Debug processing steps */}
+          {processingSteps.length > 0 && (
+            <div className="mt-6 p-3 text-left bg-gray-100 rounded text-xs max-h-60 overflow-y-auto border border-gray-300">
+              <h5 className="font-bold mb-2 text-center">Processing Log</h5>
+              <ul className="space-y-1">
+                {processingSteps.map((step, index) => (
+                  <li key={index} className="font-mono">{step}</li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
       </div>
