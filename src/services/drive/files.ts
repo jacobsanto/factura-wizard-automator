@@ -25,6 +25,8 @@ export const uploadFile = async (
     parents: [folderId],
   };
   
+  console.log(`Uploading file "${fileName}" to folder "${folderPath}" (ID: ${folderId})`);
+  
   // Create form data
   const formData = new FormData();
   formData.append(
@@ -52,5 +54,6 @@ export const uploadFile = async (
   }
   
   const data = await response.json();
+  console.log(`Successfully uploaded file. Drive file ID: ${data.id}`);
   return data.id;
 };
