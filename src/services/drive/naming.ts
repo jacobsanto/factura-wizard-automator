@@ -1,4 +1,3 @@
-
 /**
  * Utilities for file and folder naming
  */
@@ -13,6 +12,27 @@ function sanitizeText(text: string): string {
     .replace(/[\u0300-\u036f]/g, "") // remove accents
     .replace(/[\/\\:*?"<>|]/g, "") // remove illegal file chars
     .replace(/\s+/g, "_"); // replace spaces with underscores
+}
+
+/**
+ * Convert month number to Greek month name
+ */
+function getGreekMonthName(month: string): string {
+  const monthMap: Record<string, string> = {
+    "01": "Ιανουάριος",
+    "02": "Φεβρουάριος",
+    "03": "Μάρτιος",
+    "04": "Απρίλιος",
+    "05": "Μάιος",
+    "06": "Ιούνιος",
+    "07": "Ιούλιος",
+    "08": "Αύγουστος",
+    "09": "Σεπτέμβριος",
+    "10": "Οκτώβριος",
+    "11": "Νοέμβριος",
+    "12": "Δεκέμβριος",
+  };
+  return monthMap[month] || month;
 }
 
 /**
@@ -68,42 +88,44 @@ export function generateInvoiceFilename({
 
 /**
  * Determine target folder based on document data
+ * @deprecated Use generateDrivePath and joinPathSegments instead
  */
 export const determineTargetFolder = async (docData: DocumentData): Promise<string> => {
   // Extract year and month from date
   const date = new Date(docData.date);
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
-  const yearMonth = `${year}-${month}`;
   
-  // Determine base path depending on VAT number
-  if (docData.vatNumber.startsWith('EL')) {
-    return `01.Λογιστήριο/Ενδοκοινοτικά/${yearMonth}/`;
-  } else {
-    return `01.Λογιστήριο/Παραστατικά Εξόδων/${yearMonth}/`;
-  }
+  // Use the new path generation
+  const pathSegments = generateDrivePath({
+    clientVat: docData.vatNumber,
+    clientName: docData.clientName || "Άγνωστος Πελάτης", // Fallback if client name is not available
+    issuer: docData.supplier,
+    date: docData.date
+  });
+  
+  return joinPathSegments(pathSegments);
 };
 
 /**
- * Generates folder path based on VAT, date, and type
+ * Generates folder path based on VAT, client name, date, and issuer
  */
 export function generateDrivePath({
-  customerVat,
+  clientVat,
+  clientName,
   issuer,
   date,
 }: {
-  customerVat: string;
+  clientVat: string;
+  clientName: string;
   issuer: string;
-  date: string;
+  date: string; // supports YYYY-MM-DD or DD/MM/YYYY
 }): string[] {
-  const folderPath = ["01.Λογιστήριο"];
-
-  // Step 1: By Customer VAT
-  folderPath.push(sanitizeText(customerVat));
-
-  // Step 2: Extract year & month
+  // Split date
   const parts = date.split(/[-/.]/);
-  let year = "2025", month = "01";
+  let year = "2025";
+  let month = "01";
+
   if (parts[0].length === 4) {
     year = parts[0];
     month = parts[1];
@@ -111,20 +133,22 @@ export function generateDrivePath({
     year = parts[2];
     month = parts[1];
   }
-  folderPath.push(year);
-  folderPath.push(month);
 
-  // Step 3: Ενδοκοινοτικά / Εξοδα
-  if (customerVat.startsWith("EL")) {
-    folderPath.push("Ενδοκοινοτικά");
-  } else {
-    folderPath.push("Εξοδα");
-  }
+  const formattedMonth = `${month}.${getGreekMonthName(month)}`;
 
-  // Step 4: Vendor folder
-  folderPath.push(sanitizeText(issuer));
+  const rootFolder = "01.Λογιστήριο";
+  const clientFolder = `${sanitizeText(clientName)} ΑΦΜ: ${clientVat}`;
+  const typeFolder = clientVat.startsWith("EL") ? "Ενδοκοινοτικά" : "Παραστατικά εξόδων";
+  const vendorFolder = sanitizeText(issuer);
 
-  return folderPath;
+  return [
+    rootFolder,
+    clientFolder,
+    year,
+    formattedMonth,
+    typeFolder,
+    vendorFolder,
+  ];
 }
 
 /**

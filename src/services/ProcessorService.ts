@@ -64,7 +64,8 @@ export class ProcessorService {
         documentNumber: `INV-${timestamp % 10000}`,
         supplier: `Supplier-${timestamp % 100}`,
         amount: parseFloat((Math.random() * 1000 + 50).toFixed(2)),
-        currency: "€"
+        currency: "€",
+        clientName: `Client-${timestamp % 50}` // Add sample client name for demo
       };
     } catch (error) {
       console.error("Error extracting data from PDF:", error);
@@ -76,7 +77,8 @@ export class ProcessorService {
         documentNumber: "Unknown",
         supplier: "Unknown",
         amount: 0,
-        currency: "€"
+        currency: "€",
+        clientName: "Unknown Client"
       };
     }
   }
@@ -107,20 +109,21 @@ export class ProcessorService {
       updateCallback({ status: "processing", message: "Εξαγωγή δεδομένων..." });
       const extractedData = await this.extractDataFromPdf(pdfBlob);
       
-      // Generate new filename - using the enhanced function
+      // Generate new filename
       const newFilename = await this.driveService.generateFilename(extractedData);
       
-      // Determine target folder
+      // Determine target folder using the enhanced path generation
       updateCallback({ status: "processing", message: "Προετοιμασία αποθήκευσης..." });
-      const targetFolder = await this.driveService.determineTargetFolder(extractedData);
       
-      // For advanced path usage (optional enhancement):
-      // const pathSegments = generateDrivePath({
-      //   customerVat: extractedData.vatNumber,
-      //   issuer: extractedData.supplier,
-      //   date: extractedData.date,
-      // });
-      // const advancedTargetFolder = joinPathSegments(pathSegments);
+      // Generate path segments using the new method
+      const pathSegments = generateDrivePath({
+        clientVat: extractedData.vatNumber,
+        clientName: extractedData.clientName || "Άγνωστος Πελάτης",
+        issuer: extractedData.supplier,
+        date: extractedData.date
+      });
+      
+      const targetFolder = joinPathSegments(pathSegments);
       
       // Create folder structure if it doesn't exist
       const folderId = await this.driveService.getOrCreateFolder(targetFolder);

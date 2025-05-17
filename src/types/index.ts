@@ -1,4 +1,3 @@
-
 export interface DocumentData {
   vatNumber: string;
   date: string;
@@ -6,6 +5,7 @@ export interface DocumentData {
   supplier: string;
   amount: number;
   currency: string;
+  clientName?: string; // Added client name field as optional for backward compatibility
 }
 
 export interface ProcessingStatus {
