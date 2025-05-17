@@ -6,7 +6,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { GmailService } from "@/services/GmailService";
 import { useToast } from "@/hooks/use-toast";
 
-export const useEmailProcessing = (updateEmail: (email: EmailData) => void) => {
+export const useEmailProcessing = (emails: EmailData[], updateEmail: (email: EmailData) => void) => {
   const [processingEmail, setProcessingEmail] = useState<string | null>(null);
   const { settings } = useSettings();
   const { toast } = useToast();
@@ -14,8 +14,8 @@ export const useEmailProcessing = (updateEmail: (email: EmailData) => void) => {
   const handleProcess = async (emailId: string, attachmentId: string) => {
     setProcessingEmail(emailId);
     
-    // Find the email in the global state - this will be handled by the parent component
-    const email = null; // We'll get this from props
+    // Find the email
+    const email = emails.find(e => e.id === emailId);
     if (!email) {
       setProcessingEmail(null);
       return;
