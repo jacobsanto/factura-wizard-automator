@@ -1,33 +1,46 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText } from "lucide-react";
-import { getGoogleAuthUrl } from "@/services/google";
+import { getGoogleAuthUrl, checkAndFixAuthState } from "@/services/google";
 import { useToast } from "@/hooks/use-toast";
 import { GOOGLE_REDIRECT_URI } from "@/env";
 
 const Login: React.FC = () => {
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showDebug, setShowDebug] = useState(false);
   const { toast } = useToast();
+  
+  // Check URL for debug parameter
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('debug')) {
+      setShowDebug(true);
+    }
+    
+    // Add a click counter for the logo to enable debug mode
+    let clickCount = 0;
+    const logoElement = document.querySelector('.logo-debug-trigger');
+    if (logoElement) {
+      logoElement.addEventListener('click', () => {
+        clickCount++;
+        if (clickCount >= 5) {
+          setShowDebug(true);
+          toast({
+            title: "Debug Mode",
+            description: "Debug mode enabled. Technical information is now visible.",
+          });
+        }
+      });
+    }
+  }, [toast]);
 
-  // Clear any existing authentication data on login page load
-  // This helps recover from broken auth states
-  React.useEffect(() => {
+  // Fix any broken auth state on component mount
+  useEffect(() => {
     const cleanupLocalStorage = () => {
       try {
-        // Check if we have partial auth data that might cause issues
-        const hasPartialAuth = 
-          (localStorage.getItem("google_tokens") && !localStorage.getItem("google_user")) ||
-          (!localStorage.getItem("google_tokens") && localStorage.getItem("google_user"));
-        
-        // Only clear if we detect a problem
-        if (hasPartialAuth) {
-          console.log("Login: Detected partial authentication data, cleaning up local storage");
-          localStorage.removeItem("google_tokens");
-          localStorage.removeItem("google_user");
-          localStorage.removeItem("user");
-        }
+        checkAndFixAuthState();
       } catch (error) {
         console.error("Login: Error cleaning up local storage:", error);
       }
@@ -40,7 +53,6 @@ const Login: React.FC = () => {
     console.log("- Current origin:", window.location.origin);
     console.log("- Current pathname:", window.location.pathname);
     console.log("- Configured redirect URI:", GOOGLE_REDIRECT_URI);
-    console.log("- Custom domain configured as fallback in env.ts");
   }, []);
 
   const handleSignIn = () => {
@@ -62,13 +74,30 @@ const Login: React.FC = () => {
       });
     }
   };
+  
+  const handleClearLocalStorage = () => {
+    try {
+      localStorage.clear();
+      toast({
+        title: "Επιτυχής Καθαρισμός",
+        description: "Όλα τα τοπικά δεδομένα διαγράφηκαν επιτυχώς.",
+      });
+    } catch (error) {
+      console.error("Error clearing localStorage:", error);
+      toast({
+        variant: "destructive",
+        title: "Σφάλμα",
+        description: "Προέκυψε σφάλμα κατά τον καθαρισμό των δεδομένων."
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center">
-            <FileText className="h-12 w-12 text-brand-blue mb-2" />
+            <FileText className="logo-debug-trigger h-12 w-12 text-brand-blue mb-2 cursor-pointer" />
           </div>
           <CardTitle className="text-2xl font-bold text-center">
             Αυτοματισμός Παραστατικών
@@ -84,7 +113,7 @@ const Login: React.FC = () => {
             </p>
           </div>
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex flex-col space-y-4">
           <Button onClick={handleSignIn} disabled={isLoading} className="w-full bg-brand-blue hover:bg-blue-700">
             {isLoading ? (
               <div className="flex items-center justify-center">
@@ -106,6 +135,28 @@ const Login: React.FC = () => {
               </div>
             )}
           </Button>
+          
+          {/* Debug info and tools */}
+          {showDebug && (
+            <div className="w-full mt-4 p-3 bg-gray-100 rounded text-xs border border-gray-300">
+              <h5 className="font-bold mb-2 text-center text-gray-700">Debug Information</h5>
+              <div className="space-y-2">
+                <p><strong>Redirect URI:</strong> {GOOGLE_REDIRECT_URI}</p>
+                <p><strong>Current Origin:</strong> {window.location.origin}</p>
+                <p><strong>Has Tokens:</strong> {localStorage.getItem("google_tokens") ? "Yes" : "No"}</p>
+                <p><strong>Has User:</strong> {localStorage.getItem("google_user") ? "Yes" : "No"}</p>
+                <button 
+                  onClick={handleClearLocalStorage}
+                  className="w-full mt-2 bg-red-100 text-red-700 hover:bg-red-200 py-1 rounded border border-red-300 text-sm"
+                >
+                  Clear All Local Storage
+                </button>
+                <div className="text-center mt-2">
+                  <a href="/?debug" className="text-blue-600 hover:underline">Reload with debug mode</a>
+                </div>
+              </div>
+            </div>
+          )}
         </CardFooter>
       </Card>
     </div>

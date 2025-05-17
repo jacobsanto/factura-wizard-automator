@@ -10,62 +10,80 @@ import { storeTokens } from './storage';
  * Check if stored access token is valid (not expired)
  */
 export const isAccessTokenValid = (): boolean => {
-  const tokens = getStoredTokens();
-  if (!tokens || !tokens.access_token) {
-    console.log("Auth validation: No tokens found or missing access token");
+  try {
+    const tokens = getStoredTokens();
+    if (!tokens || !tokens.access_token) {
+      console.log("Auth validation: No tokens found or missing access token");
+      return false;
+    }
+    
+    // If we have an expiry date, check if token is still valid
+    if (tokens.expiry_date) {
+      const isValid = tokens.expiry_date > Date.now() + 5 * 60 * 1000; // 5 minute buffer
+      console.log(`Auth validation: Token validity check - expires in ${Math.round((tokens.expiry_date - Date.now())/60000)} minutes, isValid: ${isValid}`);
+      return isValid;
+    }
+    
+    // If no expiry date, assume token is expired
+    console.log("Auth validation: No expiry date found on token, assuming expired");
+    return false;
+  } catch (error) {
+    console.error("Auth validation: Error checking token validity", error);
     return false;
   }
-  
-  // If we have an expiry date, check if token is still valid
-  if (tokens.expiry_date) {
-    const isValid = tokens.expiry_date > Date.now() + 5 * 60 * 1000; // 5 minute buffer
-    console.log(`Auth validation: Token validity check - expires in ${Math.round((tokens.expiry_date - Date.now())/60000)} minutes, isValid: ${isValid}`);
-    return isValid;
-  }
-  
-  // If no expiry date, assume token is expired
-  console.log("Auth validation: No expiry date found on token, assuming expired");
-  return false;
 };
 
 /**
  * Get a valid access token (refreshing if necessary)
  */
 export const getValidAccessToken = async (): Promise<string | null> => {
-  console.log("Auth validation: Getting valid access token");
-  const tokens = getStoredTokens();
-  if (!tokens) {
-    console.log("Auth validation: No tokens found in storage");
-    return null;
-  }
-  
-  // If token is valid, return it
-  if (isAccessTokenValid()) {
-    console.log("Auth validation: Access token is valid, returning it");
-    return tokens.access_token;
-  }
-  
-  // If token is expired and we have a refresh token, refresh it
-  if (tokens.refresh_token) {
-    console.log("Auth validation: Access token expired, attempting to refresh");
-    try {
-      const newTokens = await refreshAccessToken(tokens.refresh_token);
-      if (newTokens && newTokens.access_token) {
-        console.log("Auth validation: Successfully refreshed access token");
-        storeTokens(newTokens);
-        return newTokens.access_token;
-      } else {
-        console.error("Auth validation: Refresh completed but no new access token returned");
-        return null;
-      }
-    } catch (error) {
-      console.error("Auth validation: Error refreshing token:", error);
+  try {
+    console.log("Auth validation: Getting valid access token");
+    const tokens = getStoredTokens();
+    if (!tokens) {
+      console.log("Auth validation: No tokens found in storage");
       return null;
     }
+    
+    // If token is valid, return it
+    if (isAccessTokenValid()) {
+      console.log("Auth validation: Access token is valid, returning it");
+      return tokens.access_token;
+    }
+    
+    // If token is expired and we have a refresh token, refresh it
+    if (tokens.refresh_token) {
+      console.log("Auth validation: Access token expired, attempting to refresh");
+      try {
+        const newTokens = await refreshAccessToken(tokens.refresh_token);
+        if (newTokens && newTokens.access_token) {
+          console.log("Auth validation: Successfully refreshed access token");
+          storeTokens(newTokens);
+          return newTokens.access_token;
+        } else {
+          console.error("Auth validation: Refresh completed but no new access token returned");
+          // Clear invalid tokens to force re-authentication
+          localStorage.removeItem("google_tokens");
+          localStorage.removeItem("google_user");
+          localStorage.removeItem("user");
+          return null;
+        }
+      } catch (error) {
+        console.error("Auth validation: Error refreshing token:", error);
+        // Clear invalid tokens to force re-authentication
+        localStorage.removeItem("google_tokens");
+        localStorage.removeItem("google_user");
+        localStorage.removeItem("user");
+        return null;
+      }
+    }
+    
+    console.log("Auth validation: No refresh token available, authentication failed");
+    return null;
+  } catch (error) {
+    console.error("Auth validation: Unexpected error getting valid token:", error);
+    return null;
   }
-  
-  console.log("Auth validation: No refresh token available, authentication failed");
-  return null;
 };
 
 /**
@@ -74,6 +92,7 @@ export const getValidAccessToken = async (): Promise<string | null> => {
  */
 export const checkAndFixAuthState = (): boolean => {
   try {
+    console.log("Auth validation: Running checkAndFixAuthState");
     const tokens = getStoredTokens();
     
     // Check for partial/corrupt token state
@@ -97,7 +116,21 @@ export const checkAndFixAuthState = (): boolean => {
         // Just try to access some properties to validate structure
         const testAccessToken = tokens.access_token;
         const testRefreshToken = tokens.refresh_token;
+        
+        // Extra validation: Check if token values are actually strings
+        if (typeof testAccessToken !== 'string' || typeof testRefreshToken !== 'string') {
+          console.error("Auth validation: Token values are not valid strings");
+          
+          // Clear corrupted tokens
+          localStorage.removeItem("google_tokens");
+          localStorage.removeItem("google_user");
+          localStorage.removeItem("user");
+          
+          return false;
+        }
+        
         console.log("Auth validation: Token structure seems valid");
+        return true;
       } catch (error) {
         console.error("Auth validation: Token structure validation failed:", error);
         
@@ -121,4 +154,16 @@ export const checkAndFixAuthState = (): boolean => {
     
     return false;
   }
+};
+
+/**
+ * Add a new function to force reset auth state
+ * This can be called from UI elements to help users recover
+ */
+export const forceResetAuthState = (): void => {
+  console.log("Auth validation: Forcing authentication reset");
+  localStorage.removeItem("google_tokens");
+  localStorage.removeItem("google_user");
+  localStorage.removeItem("user");
+  window.location.reload();
 };
