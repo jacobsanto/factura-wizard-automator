@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { GmailService } from "@/services/GmailService";
-import { EnhancedDriveService as DriveService } from "@/services/drive";
+import { EnhancedDriveService } from "@/services/drive"; 
 import { SheetsService } from "@/services/SheetsService";
 import { useToast } from "@/hooks/use-toast";
 
@@ -14,7 +14,7 @@ export const useServiceInitialization = () => {
     const initializeServices = async () => {
       try {
         const gmailService = GmailService.getInstance();
-        const driveService = DriveService.getInstance();
+        const driveService = EnhancedDriveService.getInstance();
         const sheetsService = SheetsService.getInstance();
         
         await Promise.all([

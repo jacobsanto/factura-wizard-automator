@@ -1,18 +1,18 @@
 
 import { AttachmentData, DocumentData, ProcessingStatus } from "@/types";
 import { GmailService } from "./GmailService";
-import { EnhancedDriveService as DriveService } from "./drive";
+import { EnhancedDriveService } from "./drive";
 import { SheetsService } from "./SheetsService";
 
 export class ProcessorService {
   private static instance: ProcessorService;
   private gmailService: GmailService;
-  private driveService: DriveService;
+  private driveService: EnhancedDriveService;
   private sheetsService: SheetsService;
 
   private constructor() {
     this.gmailService = GmailService.getInstance();
-    this.driveService = DriveService.getInstance();
+    this.driveService = EnhancedDriveService.getInstance();
     this.sheetsService = SheetsService.getInstance();
   }
 
