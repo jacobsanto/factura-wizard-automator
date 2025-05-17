@@ -1,6 +1,16 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { GoogleServiceStatus } from "@/types";
+import { 
+  getGoogleAuthUrl, 
+  getStoredTokens, 
+  clearTokens, 
+  getValidAccessToken,
+  refreshAccessToken
+} from "@/services/googleAuth";
+import { EnhancedDriveService } from "@/services/enhancedDriveService";
+import { GmailService } from "@/services/GmailService";
+import { SheetsService } from "@/services/SheetsService";
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -32,50 +42,79 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     sheets: false,
   });
 
-  // Mock authentication for demo purposes
-  const signIn = async () => {
-    setIsLoading(true);
-    try {
-      // In a real implementation, this would use Google's OAuth flow
-      console.log("Starting Google authentication flow...");
-      
-      // Simulate successful authentication
-      setTimeout(() => {
-        setUser({
-          name: "Demo User",
-          email: "demo@example.com",
-          picture: "https://via.placeholder.com/40",
-        });
-        setIsAuthenticated(true);
-        setServiceStatus({
-          gmail: true,
-          drive: true,
-          sheets: true,
-        });
+  // Check if user is authenticated on component mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      setIsLoading(true);
+      try {
+        const tokens = getStoredTokens();
+        
+        if (!tokens) {
+          setIsLoading(false);
+          return;
+        }
+        
+        // Try to get a valid access token
+        const accessToken = await getValidAccessToken();
+        
+        if (accessToken) {
+          // If we have a valid token, initialize services
+          setIsAuthenticated(true);
+          
+          // For a real implementation, we would fetch user info here
+          setUser({
+            name: "Google User",
+            email: "user@example.com",
+            picture: "https://via.placeholder.com/40"
+          });
+          
+          // Initialize services
+          const driveService = EnhancedDriveService.getInstance();
+          const gmailService = GmailService.getInstance();
+          const sheetsService = SheetsService.getInstance();
+          
+          const driveStatus = await driveService.initialize();
+          const gmailStatus = await gmailService.initialize();
+          const sheetsStatus = await sheetsService.initialize();
+          
+          setServiceStatus({
+            drive: driveStatus,
+            gmail: gmailStatus,
+            sheets: sheetsStatus
+          });
+        }
+      } catch (error) {
+        console.error("Error checking authentication:", error);
+      } finally {
         setIsLoading(false);
-      }, 1500);
-    } catch (error) {
-      console.error("Authentication error:", error);
-      setIsLoading(false);
-    }
+      }
+    };
+    
+    checkAuth();
+  }, []);
+
+  const signIn = async () => {
+    // Redirect to Google Auth
+    window.location.href = getGoogleAuthUrl();
   };
 
   const signOut = async () => {
     setIsLoading(true);
     try {
-      // In a real implementation, this would revoke tokens and sign out
-      setTimeout(() => {
-        setUser(null);
-        setIsAuthenticated(false);
-        setServiceStatus({
-          gmail: false,
-          drive: false,
-          sheets: false,
-        });
-        setIsLoading(false);
-      }, 800);
+      // Clear tokens
+      clearTokens();
+      
+      // Reset state
+      setIsAuthenticated(false);
+      setUser(null);
+      setServiceStatus({
+        gmail: false,
+        drive: false,
+        sheets: false,
+      });
     } catch (error) {
-      console.error("Sign out error:", error);
+      console.error("Error signing out:", error);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -85,28 +124,37 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     setIsLoading(true);
     try {
-      // In a real implementation, this would refresh the OAuth token
-      setTimeout(() => {
-        setIsLoading(false);
-        console.log("Token refreshed");
-      }, 500);
+      const tokens = getStoredTokens();
+      if (!tokens || !tokens.refresh_token) {
+        throw new Error("No refresh token available");
+      }
+      
+      // Refresh the token
+      await refreshAccessToken(tokens.refresh_token);
+      
+      // Re-initialize services
+      const driveService = EnhancedDriveService.getInstance();
+      const gmailService = GmailService.getInstance();
+      const sheetsService = SheetsService.getInstance();
+      
+      const driveStatus = await driveService.initialize();
+      const gmailStatus = await gmailService.initialize();
+      const sheetsStatus = await sheetsService.initialize();
+      
+      setServiceStatus({
+        drive: driveStatus,
+        gmail: gmailStatus,
+        sheets: sheetsStatus
+      });
     } catch (error) {
-      console.error("Token refresh error:", error);
+      console.error("Error refreshing token:", error);
+      
+      // If refreshing fails, sign out
+      await signOut();
+    } finally {
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    // Check for existing session
-    const checkAuth = async () => {
-      // In a real implementation, this would check for valid tokens
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 1000);
-    };
-    
-    checkAuth();
-  }, []);
 
   return (
     <AuthContext.Provider value={{
