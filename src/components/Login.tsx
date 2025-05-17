@@ -40,6 +40,7 @@ const Login: React.FC = () => {
     console.log("- Current origin:", window.location.origin);
     console.log("- Current pathname:", window.location.pathname);
     console.log("- Configured redirect URI:", GOOGLE_REDIRECT_URI);
+    console.log("- Custom domain configured as fallback in env.ts");
   }, []);
 
   const handleSignIn = () => {
@@ -49,6 +50,7 @@ const Login: React.FC = () => {
       console.log("Login: Initiating Google sign-in flow...");
       const authUrl = getGoogleAuthUrl();
       console.log("Login: Generated auth URL, redirecting user...");
+      console.log("Login: Redirect URI being used:", GOOGLE_REDIRECT_URI);
       window.location.href = authUrl;
     } catch (error) {
       console.error("Login: Error generating Google auth URL:", error);

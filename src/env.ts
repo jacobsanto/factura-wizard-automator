@@ -14,7 +14,8 @@ const getCurrentDomain = () => {
     return window.location.origin;
   }
   // Fallback for SSR or during initialization
-  return "https://preview--factura-wizard-automator.lovable.app";
+  // Using custom domain as default fallback
+  return "https://factura.ariviagroup.com";
 };
 
 // Make sure this matches EXACTLY what's configured in Google Cloud Console
@@ -22,4 +23,3 @@ export const GOOGLE_REDIRECT_URI = `${getCurrentDomain()}/oauth2callback`;
 
 // Log the redirect URI during initialization to help with debugging
 console.log("OAuth Redirect URI configured as:", GOOGLE_REDIRECT_URI);
-

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { exchangeCodeForTokens, storeTokens } from "@/services/google";
@@ -23,7 +22,9 @@ const OAuthCallback: React.FC = () => {
         console.log("- Code exists:", !!code);
         console.log("- Error:", error || "none");
         console.log("- Full URL:", window.location.href);
+        console.log("- Current Origin:", window.location.origin);
         console.log("- Expected redirect URI:", GOOGLE_REDIRECT_URI);
+        console.log("- Match?", window.location.origin + "/oauth2callback" === GOOGLE_REDIRECT_URI);
         
         if (error) {
           console.error("Authentication error:", error);
@@ -34,7 +35,13 @@ const OAuthCallback: React.FC = () => {
             description: `Η σύνδεση με το Google απέτυχε: ${error}`,
             variant: "destructive",
           });
-          setTimeout(() => navigate("/"), 3000);
+          
+          // If the error is redirect_uri_mismatch, provide more detailed information
+          if (error.includes("redirect_uri_mismatch") || urlParams.get("error_description")?.includes("redirect_uri_mismatch")) {
+            setErrorDetails(`Σφάλμα: redirect_uri_mismatch. Η διεύθυνση ανακατεύθυνσης που χρησιμοποιήθηκε (${window.location.origin}/oauth2callback) δεν έχει εγκριθεί στο Google Cloud Console.`);
+          }
+          
+          setTimeout(() => navigate("/"), 5000);
           return;
         }
         
