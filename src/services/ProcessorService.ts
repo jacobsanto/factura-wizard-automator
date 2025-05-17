@@ -1,8 +1,8 @@
-
 import { AttachmentData, DocumentData, ProcessingStatus } from "@/types";
 import { GmailService } from "./GmailService";
 import { EnhancedDriveService } from "./drive";
 import { SheetsService } from "./SheetsService";
+import { generateInvoiceFilename, generateDrivePath, joinPathSegments } from "./drive/naming";
 
 export class ProcessorService {
   private static instance: ProcessorService;
@@ -107,12 +107,20 @@ export class ProcessorService {
       updateCallback({ status: "processing", message: "Εξαγωγή δεδομένων..." });
       const extractedData = await this.extractDataFromPdf(pdfBlob);
       
-      // Generate new filename
+      // Generate new filename - using the enhanced function
       const newFilename = await this.driveService.generateFilename(extractedData);
       
       // Determine target folder
       updateCallback({ status: "processing", message: "Προετοιμασία αποθήκευσης..." });
       const targetFolder = await this.driveService.determineTargetFolder(extractedData);
+      
+      // For advanced path usage (optional enhancement):
+      // const pathSegments = generateDrivePath({
+      //   customerVat: extractedData.vatNumber,
+      //   issuer: extractedData.supplier,
+      //   date: extractedData.date,
+      // });
+      // const advancedTargetFolder = joinPathSegments(pathSegments);
       
       // Create folder structure if it doesn't exist
       const folderId = await this.driveService.getOrCreateFolder(targetFolder);
