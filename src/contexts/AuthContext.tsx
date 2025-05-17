@@ -11,7 +11,7 @@ import {
 import { EnhancedDriveService } from "@/services/drive";
 import { GmailService } from "@/services/GmailService";
 import { SheetsService } from "@/services/SheetsService";
-import jwt_decode from "jwt-decode";
+import { jwtDecode } from "jwt-decode"; // Updated import statement
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -53,7 +53,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Extract user information from ID token
   const extractUserInfo = (idToken: string): GoogleUserInfo | null => {
     try {
-      const decoded = jwt_decode(idToken) as any;
+      const decoded = jwtDecode(idToken) as any; // Updated function call
       return {
         name: decoded.name || "Google User",
         email: decoded.email || "",
