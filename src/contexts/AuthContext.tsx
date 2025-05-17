@@ -8,7 +8,7 @@ import {
   getValidAccessToken,
   refreshAccessToken
 } from "@/services/google";
-import { EnhancedDriveService } from "@/services/enhancedDriveService";
+import { EnhancedDriveService } from "@/services/drive";
 import { GmailService } from "@/services/GmailService";
 import { SheetsService } from "@/services/SheetsService";
 

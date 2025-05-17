@@ -1,7 +1,7 @@
 
 import { AttachmentData, DocumentData, ProcessingStatus } from "@/types";
 import { GmailService } from "./GmailService";
-import { DriveService } from "./DriveService";
+import { DriveService } from "./driveService";
 import { SheetsService } from "./SheetsService";
 
 export class ProcessorService {
