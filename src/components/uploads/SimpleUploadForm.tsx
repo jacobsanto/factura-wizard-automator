@@ -3,8 +3,10 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { uploadFile, logUpload } from "@/helpers";
+import { uploadFile } from "@/helpers";
+import { logUpload } from "@/helpers/logHelpers";
 import UploadStatus from "../uploads/UploadStatus";
+import { useToast } from "@/hooks/use-toast";
 
 const SimpleUploadForm: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -18,6 +20,7 @@ const SimpleUploadForm: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<null | "success" | "error">(null);
   const [driveLink, setDriveLink] = useState<string | null>(null);
+  const { toast } = useToast();
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -44,7 +47,7 @@ const SimpleUploadForm: React.FC = () => {
       });
       
       if (result.success && result.fileId) {
-        // Log the upload
+        // Log the upload - we've removed result.path here since it no longer exists
         logUpload(
           file.name,
           clientVat,
@@ -54,18 +57,31 @@ const SimpleUploadForm: React.FC = () => {
           date,
           amount,
           currency,
-          result.fileId,
-          result.path
+          result.fileId
         );
         
         setUploadStatus("success");
         setDriveLink(`https://drive.google.com/file/d/${result.fileId}`);
+        toast({
+          title: "Επιτυχία",
+          description: "Το αρχείο ανέβηκε επιτυχώς στο Google Drive",
+        });
       } else {
         setUploadStatus("error");
+        toast({
+          variant: "destructive",
+          title: "Σφάλμα",
+          description: "Υπήρξε πρόβλημα κατά το ανέβασμα του αρχείου",
+        });
       }
     } catch (error) {
       console.error("Upload error:", error);
       setUploadStatus("error");
+      toast({
+        variant: "destructive",
+        title: "Σφάλμα",
+        description: "Υπήρξε πρόβλημα κατά το ανέβασμα του αρχείου",
+      });
     } finally {
       setUploading(false);
     }
