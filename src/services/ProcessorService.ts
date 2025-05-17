@@ -1,13 +1,13 @@
 
 import { AttachmentData, DocumentData, ProcessingStatus } from "@/types";
 import { GmailService } from "./GmailService";
-import { DriveService } from "./driveService";
+import { EnhancedDriveService as DriveService } from "./drive";
 import { SheetsService } from "./SheetsService";
 
 export class ProcessorService {
   private static instance: ProcessorService;
   private gmailService: GmailService;
-  private driveService: typeof DriveService;
+  private driveService: DriveService;
   private sheetsService: SheetsService;
 
   private constructor() {
