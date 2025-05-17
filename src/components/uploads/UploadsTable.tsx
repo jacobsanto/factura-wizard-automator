@@ -11,13 +11,19 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { UploadLogEntry, LoggingService } from "@/services/LoggingService";
+import { getCurrentUser } from "@/utils/userUtils";
 
 const UploadsTable: React.FC = () => {
   const [logs, setLogs] = useState<UploadLogEntry[]>([]);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const loggingService = LoggingService.getInstance();
 
   useEffect(() => {
-    // Load logs on component mount
+    // Get current user and load logs on component mount
+    const user = getCurrentUser();
+    if (user) {
+      setUserEmail(user.email);
+    }
     loadLogs();
   }, []);
 
@@ -57,7 +63,10 @@ const UploadsTable: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Πρόσφατες Αποστολές</h3>
+        <h3 className="text-lg font-medium">
+          Πρόσφατες Αποστολές 
+          {userEmail && <span className="text-sm text-gray-500 ml-2">({userEmail})</span>}
+        </h3>
         <Button variant="outline" size="sm" onClick={handleClearLogs}>
           Καθαρισμός
         </Button>

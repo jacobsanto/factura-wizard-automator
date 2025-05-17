@@ -76,6 +76,8 @@ const OAuthCallback: React.FC = () => {
             
             // Store user info in localStorage
             localStorage.setItem("google_user", JSON.stringify(userInfo));
+            // Also store in the "user" key for compatibility with other components
+            localStorage.setItem("user", JSON.stringify(userInfo));
           } else {
             console.error("Failed to fetch user info:", await userInfoResponse.text());
           }

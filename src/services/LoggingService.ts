@@ -3,6 +3,7 @@
  * LoggingService - Handles logging uploads to both local storage and potentially Google Sheets
  */
 import { DocumentData } from "@/types";
+import { getUserStorageKey } from "@/utils/userUtils";
 
 export interface UploadLogEntry {
   timestamp: string;
@@ -16,11 +17,12 @@ export interface UploadLogEntry {
   currency: string;
   driveLink: string;
   targetPath?: string;
+  userEmail?: string;
 }
 
 export class LoggingService {
   private static instance: LoggingService;
-  private readonly LOCAL_STORAGE_KEY = "uploadLogs";
+  private readonly LOCAL_STORAGE_BASE_KEY = "uploadLogs";
 
   private constructor() {}
 
@@ -29,6 +31,13 @@ export class LoggingService {
       LoggingService.instance = new LoggingService();
     }
     return LoggingService.instance;
+  }
+
+  /**
+   * Get the user-specific storage key
+   */
+  private getStorageKey(): string {
+    return getUserStorageKey(this.LOCAL_STORAGE_BASE_KEY);
   }
 
   /**
@@ -44,7 +53,8 @@ export class LoggingService {
     amount,
     currency,
     driveFileId,
-    targetPath
+    targetPath,
+    userEmail
   }: {
     filename: string;
     clientVat: string;
@@ -56,8 +66,10 @@ export class LoggingService {
     currency: string;
     driveFileId: string;
     targetPath?: string;
+    userEmail?: string;
   }): void {
     const logs = this.getLogs();
+    const currentUser = userEmail || (localStorage.getItem("google_user") ? JSON.parse(localStorage.getItem("google_user")!).email : "unknown");
     
     logs.push({
       timestamp: new Date().toISOString(),
@@ -70,10 +82,11 @@ export class LoggingService {
       amount,
       currency,
       driveLink: `https://drive.google.com/file/d/${driveFileId}`,
-      targetPath
+      targetPath,
+      userEmail: currentUser
     });
     
-    localStorage.setItem(this.LOCAL_STORAGE_KEY, JSON.stringify(logs));
+    localStorage.setItem(this.getStorageKey(), JSON.stringify(logs));
   }
 
   /**
@@ -104,7 +117,7 @@ export class LoggingService {
    */
   public getLogs(): UploadLogEntry[] {
     try {
-      const logs = localStorage.getItem(this.LOCAL_STORAGE_KEY);
+      const logs = localStorage.getItem(this.getStorageKey());
       return logs ? JSON.parse(logs) : [];
     } catch (error) {
       console.error("Error retrieving logs:", error);
@@ -124,7 +137,7 @@ export class LoggingService {
    * Clear all logs
    */
   public clearLogs(): void {
-    localStorage.removeItem(this.LOCAL_STORAGE_KEY);
+    localStorage.removeItem(this.getStorageKey());
   }
 
   /**

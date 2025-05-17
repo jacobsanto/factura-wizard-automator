@@ -98,6 +98,7 @@ export const uploadInvoiceToDrive = async ({
   amount,
   currency,
   rootFolderId = 'root',
+  includeUserFolder = true,
 }: {
   file: Blob;
   clientVat: string;
@@ -108,10 +109,11 @@ export const uploadInvoiceToDrive = async ({
   amount: string;
   currency: string;
   rootFolderId?: string;
+  includeUserFolder?: boolean;
 }): Promise<{id: string; name: string}> => {
   const accessToken = await ensureAuth();
 
-  console.log("Starting upload to Drive:", { clientName, issuer, invoiceNumber });
+  console.log("Starting upload to Drive:", { clientName, issuer, invoiceNumber, includeUserFolder });
   
   // Step 1: Generate folder path
   const folderPath = generateDrivePath({
@@ -119,6 +121,7 @@ export const uploadInvoiceToDrive = async ({
     clientName,
     issuer,
     date,
+    includeUserFolder
   });
 
   console.log("Generated folder path:", folderPath);

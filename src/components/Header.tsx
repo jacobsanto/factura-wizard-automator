@@ -12,11 +12,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut, Settings, HelpCircle, FileText } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { getCurrentUser } from "@/utils/userUtils";
 
 const Header: React.FC = () => {
   const { isAuthenticated, user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const currentUser = getCurrentUser();
 
   const handleSettingsClick = () => {
     // If we're already on the home page, we can simply change the tab
@@ -31,6 +33,9 @@ const Header: React.FC = () => {
       navigate('/?tab=settings');
     }
   };
+
+  // Use either the currentUser from our utility or the user from auth context
+  const displayUser = currentUser || user;
 
   return (
     <header className="bg-white shadow-sm border-b px-6 py-3">
@@ -53,14 +58,14 @@ const Header: React.FC = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger className="focus:outline-none">
                   <Avatar className="h-8 w-8 border">
-                    <AvatarImage src={user?.picture} />
-                    <AvatarFallback>{user?.name?.charAt(0) || "U"}</AvatarFallback>
+                    <AvatarImage src={displayUser?.picture} />
+                    <AvatarFallback>{displayUser?.name?.charAt(0) || "U"}</AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium">{user?.name || "User"}</p>
-                    <p className="text-xs text-muted-foreground">{user?.email || "user@example.com"}</p>
+                    <p className="text-sm font-medium">{displayUser?.name || "User"}</p>
+                    <p className="text-xs text-muted-foreground">{displayUser?.email || "user@example.com"}</p>
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSettingsClick} className="cursor-pointer">

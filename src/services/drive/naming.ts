@@ -2,6 +2,7 @@
  * Utilities for file and folder naming
  */
 import { DocumentData } from "@/types";
+import { getCurrentUser } from "@/utils/userUtils";
 
 /**
  * Clean and normalize Greek text
@@ -115,11 +116,13 @@ export function generateDrivePath({
   clientName,
   issuer,
   date,
+  includeUserFolder = true
 }: {
   clientVat: string;
   clientName: string;
   issuer: string;
   date: string; // supports YYYY-MM-DD or DD/MM/YYYY
+  includeUserFolder?: boolean;
 }): string[] {
   // Split date
   const parts = date.split(/[-/.]/);
@@ -137,18 +140,33 @@ export function generateDrivePath({
   const formattedMonth = `${month}.${getGreekMonthName(month)}`;
 
   const rootFolder = "01.Λογιστήριο";
+  
+  // Create the path segments array, starting with the root folder
+  const pathSegments = [rootFolder];
+  
+  // If includeUserFolder is true, add the user folder
+  if (includeUserFolder) {
+    const currentUser = getCurrentUser();
+    if (currentUser && currentUser.email) {
+      // Use email as folder name for unique identification
+      pathSegments.push(sanitizeText(currentUser.email));
+    }
+  }
+  
+  // Add the rest of the path segments
   const clientFolder = `${sanitizeText(clientName)} ΑΦΜ: ${clientVat}`;
   const typeFolder = clientVat.startsWith("EL") ? "Ενδοκοινοτικά" : "Παραστατικά εξόδων";
   const vendorFolder = sanitizeText(issuer);
-
-  return [
-    rootFolder,
+  
+  pathSegments.push(
     clientFolder,
     year,
     formattedMonth,
     typeFolder,
-    vendorFolder,
-  ];
+    vendorFolder
+  );
+  
+  return pathSegments;
 }
 
 /**

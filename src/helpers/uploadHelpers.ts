@@ -17,6 +17,7 @@ export const uploadInvoiceToDrive = async (
   try {
     const driveService = EnhancedDriveService.getInstance();
     
+    // Upload the file with the user folder included in the path
     const result = await driveService.uploadInvoiceToDrive({
       file,
       clientVat: docData.vatNumber,
@@ -25,7 +26,8 @@ export const uploadInvoiceToDrive = async (
       invoiceNumber: docData.documentNumber,
       date: docData.date,
       amount: docData.amount.toString(),
-      currency: docData.currency
+      currency: docData.currency,
+      includeUserFolder: true  // Add this parameter to include user folder in path
     });
     
     // Log the successful upload
@@ -55,14 +57,21 @@ export const uploadFile = async (
     date: string;
     amount: string;
     currency: string;
+    includeUserFolder?: boolean;
   }
 ): Promise<{ success: boolean; fileId?: string; fileName?: string }> => {
   try {
     const driveService = EnhancedDriveService.getInstance();
     
+    // Include user folder by default
+    const uploadOptions = {
+      ...options,
+      includeUserFolder: options.includeUserFolder !== false
+    };
+    
     const result = await driveService.uploadInvoiceToDrive({
       file,
-      ...options
+      ...uploadOptions
     });
     
     return {
