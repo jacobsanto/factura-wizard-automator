@@ -33,13 +33,17 @@ export async function fetchEmailsWithLabel(label: string): Promise<EmailData[]> 
     const targetLabel = labels.labels.find((l: any) => l.name === label);
     
     if (!targetLabel) {
-      console.log(`Label '${label}' not found. Using inbox messages.`);
+      console.log(`Label '${label}' not found. Fetching all inbox emails with attachments.`);
     }
 
-    // Query for messages with the specified label or inbox if label not found
-    const queryParam = targetLabel ? `label:${targetLabel.id}` : 'in:inbox';
+    // Query for messages with the specified label or all inbox emails with attachments if label not found
+    const queryParam = targetLabel 
+      ? `label:${targetLabel.id}` 
+      : 'in:inbox has:attachment';
+    
+    // Increased maxResults to fetch more emails
     const messagesResponse = await fetch(
-      `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(queryParam)}&maxResults=10`,
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(queryParam)}&maxResults=25`,
       {
         headers: {
           'Authorization': `Bearer ${accessToken}`
