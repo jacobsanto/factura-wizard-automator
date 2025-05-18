@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FormContainer from "@/components/uploads/FormContainer";
 import AuthAlert from "@/components/uploads/AuthAlert";
 import ErrorAlert from "@/components/uploads/ErrorAlert";
-import { useSupabaseAuth } from "@/contexts/supabase/SupabaseAuthContext";
+import { useSupabaseAuth } from "@/contexts/supabase/auth";
 import { EnhancedDriveService } from "@/services/drive";
 
 const DashboardUploadSection: React.FC = () => {

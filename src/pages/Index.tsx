@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { SettingsProvider } from "@/contexts/SettingsContext";
-import { useSupabaseAuth } from "@/contexts/supabase/SupabaseAuthContext";
+import { useSupabaseAuth } from "@/contexts/supabase/auth";
 import { useDevMode } from "@/contexts/DevModeContext";
 import Header from "@/components/Header";
 import Login from "@/components/Login";

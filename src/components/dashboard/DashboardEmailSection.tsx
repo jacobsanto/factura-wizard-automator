@@ -6,7 +6,7 @@ import DashboardButton from "./DashboardButton";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { checkAndFixAuthState, getStoredTokens } from "@/services/google";
 import { useToast } from "@/hooks/use-toast";
-import { useSupabaseAuth } from "@/contexts/supabase/SupabaseAuthContext";
+import { useSupabaseAuth } from "@/contexts/supabase/auth";
 
 interface DashboardEmailSectionProps {
   emails: EmailData[];

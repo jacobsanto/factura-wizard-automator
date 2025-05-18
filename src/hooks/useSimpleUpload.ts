@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { extractInvoiceDataFromPdf } from "@/api/gptApi";
 import { uploadInvoiceToDrive } from "@/helpers/uploadHelpers";
 import { isDriveReady } from "@/helpers/driveHelpers";
-import { useSupabaseAuth } from "@/contexts/supabase/SupabaseAuthContext";
+import { useSupabaseAuth } from "@/contexts/supabase/auth";
 
 type UploadStatusType = "success" | "error" | null;
 
