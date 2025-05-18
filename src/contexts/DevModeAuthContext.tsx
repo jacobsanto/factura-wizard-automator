@@ -1,7 +1,19 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
-import { SupabaseAuthProvider, useSupabaseAuth, SupabaseAuthContextProps } from "./supabase/SupabaseAuthContext";
+import { SupabaseAuthProvider, useSupabaseAuth } from "./supabase/SupabaseAuthContext";
+
+// Define our own interface based on what we need from the SupabaseAuthContext
+interface SupabaseAuthContextProps {
+  session: Session | null;
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  signIn: (email: string, password: string) => Promise<{ error: any | null }>;
+  signUp: (email: string, password: string) => Promise<{ error: any | null }>;
+  signOut: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+}
 
 interface DevModeContextProps {
   isDevMode: boolean;
