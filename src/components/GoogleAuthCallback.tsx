@@ -1,18 +1,35 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { exchangeCodeForTokens } from '@/services/google';
 import { useToast } from '@/hooks/use-toast';
+import { useSupabaseAuth } from '@/contexts/supabase/SupabaseAuthContext'; 
 
 const GoogleAuthCallback: React.FC = () => {
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAuthenticated } = useSupabaseAuth();
   
   useEffect(() => {
     const handleCallback = async () => {
       try {
+        // Check if user is authenticated with Supabase first
+        if (!isAuthenticated) {
+          console.log("User not authenticated with Supabase during Google OAuth callback");
+          setErrorMessage("Πρέπει να συνδεθείτε πρώτα με τον λογαριασμό σας για να εξουσιοδοτήσετε το Google");
+          setStatus('error');
+          
+          toast({
+            title: "Απαιτείται σύνδεση",
+            description: "Παρακαλώ συνδεθείτε πρώτα με τον λογαριασμό σας",
+            variant: "destructive",
+          });
+          
+          setTimeout(() => navigate('/'), 3000);
+          return;
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
         const error = urlParams.get('error');
@@ -98,7 +115,7 @@ const GoogleAuthCallback: React.FC = () => {
     };
     
     handleCallback();
-  }, [navigate, toast]);
+  }, [navigate, toast, isAuthenticated]);
   
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">

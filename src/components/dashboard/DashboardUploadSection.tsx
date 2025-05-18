@@ -20,9 +20,9 @@ const DashboardUploadSection: React.FC = () => {
     const checkGoogleAuth = async () => {
       try {
         // Check if we have valid Google tokens
-        const hasTokens = !!getStoredTokens()?.access_token;
+        const tokens = await getStoredTokens();
         
-        if (!hasTokens) {
+        if (!tokens?.access_token) {
           setIsGoogleAuthenticated(false);
           return;
         }
@@ -40,6 +40,16 @@ const DashboardUploadSection: React.FC = () => {
     };
     
     checkGoogleAuth();
+    
+    // Listen for token changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'google_tokens') {
+        checkGoogleAuth();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const handleClearError = () => {
@@ -66,7 +76,18 @@ const DashboardUploadSection: React.FC = () => {
           <p className="text-blue-700 mb-3">
             Για να ανεβάσετε αρχεία στο Google Drive, παρακαλώ συνδεθείτε με τον λογαριασμό σας Google.
           </p>
-          <GoogleAuthButton className="bg-white hover:bg-gray-50" />
+          <GoogleAuthButton 
+            className="bg-white hover:bg-gray-50" 
+            onSuccess={async () => {
+              // Force re-check of authentication after success
+              const tokens = await getStoredTokens();
+              if (tokens?.access_token) {
+                const driveService = EnhancedDriveService.getInstance();
+                const isDriveInitialized = await driveService.initialize();
+                setIsGoogleAuthenticated(isDriveInitialized);
+              }
+            }}
+          />
         </div>
       )}
       

@@ -38,8 +38,8 @@ const Header: React.FC = () => {
   
   useEffect(() => {
     // Check Google auth status
-    const checkGoogleAuth = () => {
-      const tokens = getStoredTokens();
+    const checkGoogleAuth = async () => {
+      const tokens = await getStoredTokens();
       setHasGoogleAuth(!!tokens?.access_token);
     };
     
@@ -64,8 +64,8 @@ const Header: React.FC = () => {
     navigate('/?tab=settings');
   };
   
-  const handleGoogleSignOut = () => {
-    clearTokens();
+  const handleGoogleSignOut = async () => {
+    await clearTokens();
     setHasGoogleAuth(false);
   };
 

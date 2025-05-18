@@ -15,7 +15,17 @@ export const useDriveAuth = () => {
       setIsLoading(true);
       try {
         // First fix potential auth state issues
-        checkAndFixAuthState();
+        await checkAndFixAuthState();
+        
+        // Check if we have a valid token
+        const accessToken = await getValidAccessToken();
+        
+        // If no access token, user is not authenticated
+        if (!accessToken) {
+          setIsAuthenticated(false);
+          setIsLoading(false);
+          return;
+        }
         
         // Check if Drive service is ready
         const driveReady = await isDriveReady();
@@ -36,11 +46,21 @@ export const useDriveAuth = () => {
     };
     
     checkAuth();
+    
+    // Listen for token changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'google_tokens') {
+        checkAuth();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
   
   const handleSignOut = async () => {
     try {
-      forceResetAuthState();
+      await forceResetAuthState();
       setIsAuthenticated(false);
       toast({
         title: "Αποσύνδεση",
@@ -54,7 +74,7 @@ export const useDriveAuth = () => {
   
   const handleForcedRefresh = async () => {
     try {
-      forceResetAuthState();
+      await forceResetAuthState();
       window.location.reload();
     } catch (error) {
       console.error("Error forcing refresh:", error);

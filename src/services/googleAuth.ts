@@ -1,3 +1,4 @@
+
 /**
  * Google Authentication Service
  * This file provides core functionality for Google OAuth authentication.
@@ -15,8 +16,9 @@ interface GoogleTokens {
   expiry_date?: number;
 }
 
-// Store tokens in local storage
-export const storeTokens = (tokens: GoogleTokens) => {
+// Store tokens in local storage (temporary storage for session duration)
+// and in the database (persistent storage)
+export const storeTokens = async (tokens: GoogleTokens) => {
   if (!tokens.access_token) {
     console.error("Invalid tokens received - missing access_token");
     return false;
@@ -28,7 +30,26 @@ export const storeTokens = (tokens: GoogleTokens) => {
   }
   
   try {
+    // Store tokens in local storage for session usage
     localStorage.setItem("google_tokens", JSON.stringify(tokens));
+    
+    // Also store tokens in database for persistence
+    const { data: sessionData } = await supabase.auth.getSession();
+    
+    if (sessionData.session) {
+      // Only store tokens if user is authenticated
+      const { error } = await supabase.from('user_google_tokens').upsert({
+        user_id: sessionData.session.user.id,
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        expiry_date: tokens.expiry_date || 0
+      }, { onConflict: 'user_id' });
+      
+      if (error) {
+        console.error("Error storing tokens in database:", error);
+      }
+    }
+    
     return true;
   } catch (error) {
     console.error("Error storing tokens:", error);
@@ -36,22 +57,71 @@ export const storeTokens = (tokens: GoogleTokens) => {
   }
 };
 
-// Get stored tokens from local storage
-export const getStoredTokens = (): GoogleTokens | null => {
+// Get stored tokens from local storage or database
+export const getStoredTokens = async (): Promise<GoogleTokens | null> => {
   try {
-    const tokens = localStorage.getItem("google_tokens");
-    if (!tokens) return null;
-    return JSON.parse(tokens);
+    // First try to get tokens from local storage (faster)
+    const tokensString = localStorage.getItem("google_tokens");
+    
+    if (tokensString) {
+      return JSON.parse(tokensString);
+    }
+    
+    // If not in local storage, try to get from database
+    const { data: sessionData } = await supabase.auth.getSession();
+    
+    if (sessionData.session) {
+      // Only fetch tokens if user is authenticated
+      const { data, error } = await supabase
+        .from('user_google_tokens')
+        .select('access_token, refresh_token, expiry_date')
+        .eq('user_id', sessionData.session.user.id)
+        .single();
+      
+      if (error || !data) {
+        console.error("Error fetching tokens from database:", error);
+        return null;
+      }
+      
+      // Store fetched tokens in local storage for future use
+      const tokens: GoogleTokens = {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expiry_date: data.expiry_date
+      };
+      
+      localStorage.setItem("google_tokens", JSON.stringify(tokens));
+      return tokens;
+    }
+    
+    return null;
   } catch (error) {
     console.error("Error retrieving tokens:", error);
     return null;
   }
 };
 
-// Clear stored tokens from local storage
-export const clearTokens = () => {
+// Clear stored tokens from local storage and database
+export const clearTokens = async (): Promise<boolean> => {
   try {
+    // Clear from local storage
     localStorage.removeItem("google_tokens");
+    
+    // Clear from database
+    const { data: sessionData } = await supabase.auth.getSession();
+    
+    if (sessionData.session) {
+      // Only delete tokens if user is authenticated
+      const { error } = await supabase
+        .from('user_google_tokens')
+        .delete()
+        .eq('user_id', sessionData.session.user.id);
+      
+      if (error) {
+        console.error("Error deleting tokens from database:", error);
+      }
+    }
+    
     return true;
   } catch (error) {
     console.error("Error clearing tokens:", error);
@@ -61,7 +131,9 @@ export const clearTokens = () => {
 
 // Get a fresh access token (using refresh token if needed)
 export const getValidAccessToken = async (): Promise<string | null> => {
-  const tokens = getStoredTokens();
+  // Get stored tokens
+  const tokens = await getStoredTokens();
+  
   if (!tokens) {
     console.log("No tokens found in storage");
     return null;
@@ -102,11 +174,16 @@ export const refreshAccessToken = async (refreshToken: string): Promise<GoogleTo
     const { data: authData } = await supabase.auth.getSession();
     const accessToken = authData.session?.access_token;
     
+    if (!accessToken) {
+      console.error("No Supabase session available for token refresh");
+      return null;
+    }
+    
     const response = await fetch("/api/google-oauth", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(accessToken ? { "Authorization": `Bearer ${accessToken}` } : {})
+        "Authorization": `Bearer ${accessToken}`
       },
       body: JSON.stringify({ refresh_token: refreshToken }),
     });
@@ -117,7 +194,7 @@ export const refreshAccessToken = async (refreshToken: string): Promise<GoogleTo
       
       // If unauthorized, we need to clear tokens and re-authenticate
       if (response.status === 401 || response.status === 403) {
-        clearTokens();
+        await clearTokens();
       }
       
       return null;
@@ -133,7 +210,8 @@ export const refreshAccessToken = async (refreshToken: string): Promise<GoogleTo
       token_type: "Bearer"
     };
     
-    storeTokens(newTokens);
+    // Store the refreshed tokens
+    await storeTokens(newTokens);
     return newTokens;
   } catch (error) {
     console.error("Error during token refresh:", error);
@@ -173,11 +251,16 @@ export const exchangeCodeForTokens = async (code: string): Promise<GoogleTokens 
     const { data: authData } = await supabase.auth.getSession();
     const accessToken = authData.session?.access_token;
     
+    if (!accessToken) {
+      console.error("No Supabase session available for code exchange");
+      return null;
+    }
+    
     const response = await fetch("/api/google-oauth", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(accessToken ? { "Authorization": `Bearer ${accessToken}` } : {})
+        "Authorization": `Bearer ${accessToken}`
       },
       body: JSON.stringify({ code }),
     });
@@ -197,7 +280,8 @@ export const exchangeCodeForTokens = async (code: string): Promise<GoogleTokens 
       token_type: "Bearer"
     };
     
-    storeTokens(tokens);
+    // Store tokens in both local storage and database
+    await storeTokens(tokens);
     return tokens;
   } catch (error) {
     console.error("Error exchanging code for tokens:", error);
@@ -206,26 +290,26 @@ export const exchangeCodeForTokens = async (code: string): Promise<GoogleTokens 
 };
 
 // Check and fix auth state issues
-export const checkAndFixAuthState = (): boolean => {
+export const checkAndFixAuthState = async (): Promise<boolean> => {
   try {
-    const tokens = localStorage.getItem("google_tokens");
-    if (!tokens) {
+    const tokensString = localStorage.getItem("google_tokens");
+    if (!tokensString) {
       // No tokens, auth state is valid (user is not logged in)
       return true;
     }
     
     // Check if tokens are valid JSON
     try {
-      const parsedTokens = JSON.parse(tokens);
+      const parsedTokens = JSON.parse(tokensString);
       if (!parsedTokens.access_token || typeof parsedTokens.access_token !== 'string') {
         // Invalid tokens, clear them
-        clearTokens();
+        await clearTokens();
         return false;
       }
       return true;
     } catch (e) {
       // Invalid JSON, clear tokens
-      clearTokens();
+      await clearTokens();
       return false;
     }
   } catch (error) {
@@ -235,9 +319,9 @@ export const checkAndFixAuthState = (): boolean => {
 };
 
 // Force reset of authentication state
-export const forceResetAuthState = (): void => {
+export const forceResetAuthState = async (): Promise<void> => {
   try {
-    clearTokens();
+    await clearTokens();
     localStorage.removeItem("google_user");
     localStorage.removeItem("user");
     console.log("Auth state reset forced");
