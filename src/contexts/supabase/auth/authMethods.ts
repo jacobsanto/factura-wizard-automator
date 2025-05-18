@@ -1,7 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { storeTokens } from '@/services/googleAuth/storage';
 
 // Sign in with email and password
 export const signInWithEmailPassword = async (email: string, password: string) => {
@@ -51,6 +50,7 @@ export const signUpWithEmailPassword = async (email: string, password: string) =
 // Sign out user
 export const signOutUser = async () => {
   try {
+    localStorage.removeItem("google_tokens");
     await supabase.auth.signOut();
     // Toast notification is handled by the onAuthStateChange event
   } catch (error) {
@@ -65,15 +65,16 @@ export const signOutUser = async () => {
 
 // Handle OAuth tokens storage
 export const handleOAuthTokens = async (session: any) => {
-  if (session?.provider_token && session.provider_refresh_token) {
+  if (session?.provider_token) {
     console.log("Found OAuth tokens, storing for Google services");
     
-    await storeTokens({
+    // Simply store the token in localStorage for future use by Google services
+    localStorage.setItem("google_tokens", JSON.stringify({
       access_token: session.provider_token,
       refresh_token: session.provider_refresh_token,
       expiry_date: Date.now() + 3600 * 1000, // Default to 1 hour
       token_type: "Bearer"
-    });
+    }));
     
     return true;
   }

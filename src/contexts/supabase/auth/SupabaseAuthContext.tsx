@@ -13,6 +13,7 @@ export const SupabaseAuthProvider = ({ children }: { children: React.ReactNode }
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [hasGoogleAccess, setHasGoogleAccess] = useState<boolean>(false);
 
   useEffect(() => {
     console.info("SupabaseAuthProvider: Initializing auth state...");
@@ -27,13 +28,18 @@ export const SupabaseAuthProvider = ({ children }: { children: React.ReactNode }
         // If this is a sign in with OAuth provider, check for Google tokens
         if (event === 'SIGNED_IN') {
           if (currentSession) {
-            const tokenStored = await handleOAuthTokens(currentSession);
+            const hasProviderToken = !!currentSession.provider_token;
+            setHasGoogleAccess(hasProviderToken);
             
-            if (tokenStored) {
-              toast({
-                title: "Σύνδεση με Google επιτυχής",
-                description: "Έχετε πρόσβαση στις υπηρεσίες Google.",
-              });
+            if (hasProviderToken) {
+              const tokenStored = await handleOAuthTokens(currentSession);
+              
+              if (tokenStored) {
+                toast({
+                  title: "Σύνδεση με Google επιτυχής",
+                  description: "Έχετε πρόσβαση στις υπηρεσίες Google.",
+                });
+              }
             }
           }
           
@@ -42,6 +48,7 @@ export const SupabaseAuthProvider = ({ children }: { children: React.ReactNode }
             description: "Έχετε συνδεθεί επιτυχώς.",
           });
         } else if (event === 'SIGNED_OUT') {
+          setHasGoogleAccess(false);
           toast({
             title: "Αποσύνδεση",
             description: "Έχετε αποσυνδεθεί επιτυχώς.",
@@ -57,7 +64,12 @@ export const SupabaseAuthProvider = ({ children }: { children: React.ReactNode }
       
       // If session exists and has provider tokens, store them
       if (currentSession) {
-        handleOAuthTokens(currentSession);
+        const hasProviderToken = !!currentSession.provider_token;
+        setHasGoogleAccess(hasProviderToken);
+        
+        if (hasProviderToken) {
+          handleOAuthTokens(currentSession);
+        }
       }
       
       setIsLoading(false);
@@ -90,6 +102,7 @@ export const SupabaseAuthProvider = ({ children }: { children: React.ReactNode }
     user,
     isLoading,
     isAuthenticated: !!session,
+    hasGoogleAccess,
     signIn: signInWithEmailPassword,
     signUp: signUpWithEmailPassword,
     signOut: signOutUser,

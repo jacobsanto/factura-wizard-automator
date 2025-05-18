@@ -23,7 +23,11 @@ export const signInWithGoogle = async () => {
       provider: 'google',
       options: {
         redirectTo: window.location.origin,
-        scopes: GOOGLE_OAUTH_SCOPES
+        scopes: GOOGLE_OAUTH_SCOPES,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent' // Always show consent screen to ensure we get refresh tokens
+        }
       }
     });
     
