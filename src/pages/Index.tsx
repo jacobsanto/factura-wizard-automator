@@ -144,7 +144,7 @@ const AppContent: React.FC = () => {
             <Dashboard />
           </main>
           <footer className="py-4 px-6 border-t text-center text-sm text-gray-500">
-            © {new Date().getFullYear()} Αριβία Γκρουπ - Αυτοματισμός Παραστατικών
+            © {new Date().getFullYear()} Arivia Group - Αυτοματισμός Παραστατικών
             {isDevMode && (
               <span className="ml-2 inline-flex items-center">
                 <span className="h-2 w-2 rounded-full mr-1 bg-amber-500"></span>
