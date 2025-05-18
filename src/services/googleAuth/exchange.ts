@@ -1,10 +1,35 @@
 
 /**
- * Code exchange functionality for Google OAuth
+ * Exchange code for tokens with Google OAuth
  */
+import { supabase } from "@/integrations/supabase/client";
+import { GOOGLE_REDIRECT_URI } from "@/env";
 import { GoogleTokens } from "./types";
 import { storeTokens } from "./storage";
-import { supabase } from "@/integrations/supabase/client";
+
+// Get the Google OAuth URL for initiating the authentication flow
+export const getGoogleAuthUrl = (): string => {
+  const rootUrl = "https://accounts.google.com/o/oauth2/v2/auth";
+  
+  const options = {
+    redirect_uri: GOOGLE_REDIRECT_URI,
+    client_id: "467372877930-o2pfcrfugeh1c4h5gvo2at9um6grq7eg.apps.googleusercontent.com",
+    access_type: "offline",
+    response_type: "code",
+    prompt: "consent",
+    scope: [
+      "https://www.googleapis.com/auth/userinfo.profile",
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/gmail.readonly",
+      "https://www.googleapis.com/auth/gmail.modify",
+      "https://www.googleapis.com/auth/drive",
+      "https://www.googleapis.com/auth/spreadsheets"
+    ].join(" ")
+  };
+  
+  const queryString = new URLSearchParams(options).toString();
+  return `${rootUrl}?${queryString}`;
+};
 
 // Exchange authorization code for tokens
 export const exchangeCodeForTokens = async (code: string): Promise<GoogleTokens | null> => {

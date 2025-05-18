@@ -10,5 +10,8 @@ export {
   getStoredTokens,
   clearTokens,
   getValidAccessToken,
+  checkAndFixAuthState,
+  forceResetAuthState,
+  getGoogleAuthUrl
 } from '../googleAuth';
 
