@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
@@ -35,17 +34,20 @@ export const SupabaseAuthProvider = ({ children }: { children: React.ReactNode }
         
         // If this is a sign in with OAuth provider, check for Google tokens
         if (event === 'SIGNED_IN' && currentSession?.provider_token && currentSession.provider_refresh_token) {
-          if (currentSession.provider_token && currentSession.provider_refresh_token) {
-            console.log("SupabaseAuthProvider: Found OAuth tokens, storing for Google services");
-            
-            // Store the OAuth tokens for Google services
-            await storeTokens({
-              access_token: currentSession.provider_token,
-              refresh_token: currentSession.provider_refresh_token,
-              expiry_date: Date.now() + 3600 * 1000, // Default to 1 hour
-              token_type: "Bearer"
-            });
-          }
+          console.log("SupabaseAuthProvider: Found OAuth tokens, storing for Google services");
+          
+          // Store the OAuth tokens for Google services
+          await storeTokens({
+            access_token: currentSession.provider_token,
+            refresh_token: currentSession.provider_refresh_token,
+            expiry_date: Date.now() + 3600 * 1000, // Default to 1 hour
+            token_type: "Bearer"
+          });
+          
+          toast({
+            title: "Σύνδεση με Google επιτυχής",
+            description: "Έχετε πρόσβαση στις υπηρεσίες Google.",
+          });
         }
         
         if (event === 'SIGNED_IN') {
@@ -66,10 +68,22 @@ export const SupabaseAuthProvider = ({ children }: { children: React.ReactNode }
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
+      
+      // If session exists and has provider tokens, store them
+      if (currentSession?.provider_token && currentSession?.provider_refresh_token) {
+        storeTokens({
+          access_token: currentSession.provider_token,
+          refresh_token: currentSession.provider_refresh_token,
+          expiry_date: Date.now() + 3600 * 1000, // Default to 1 hour
+          token_type: "Bearer"
+        });
+      }
+      
       setIsLoading(false);
       console.info("SupabaseAuthProvider: Initial session check complete", { 
         hasSession: !!currentSession,
-        user: currentSession?.user?.email
+        user: currentSession?.user?.email,
+        hasGoogleTokens: !!currentSession?.provider_token
       });
     }).catch(error => {
       console.error("SupabaseAuthProvider: Error getting session", error);

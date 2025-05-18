@@ -44,7 +44,7 @@ const Login: React.FC = () => {
         </CardHeader>
         
         <CardContent className="space-y-4">
-          {/* Google Sign In Button - Now with clarified purpose */}
+          {/* Google Sign In Button with enhanced description */}
           <div className="my-6">
             <Button 
               onClick={handleGoogleSignIn} 
@@ -62,7 +62,7 @@ const Login: React.FC = () => {
               </svg>
               <span className="ml-2 text-base font-medium">
                 {isLoading ? 'Σύνδεση με Google...' : 'Σύνδεση με Google'}
-                <span className="block text-xs text-gray-500 mt-1">Παρέχει πρόσβαση σε υπηρεσίες Google</span>
+                <span className="block text-xs text-gray-500 mt-1">Απαιτείται για πλήρη πρόσβαση στις λειτουργίες της εφαρμογής</span>
               </span>
             </Button>
           </div>

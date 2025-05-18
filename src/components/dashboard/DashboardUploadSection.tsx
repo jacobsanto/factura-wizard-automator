@@ -7,22 +7,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FormContainer from "@/components/uploads/FormContainer";
 import AuthAlert from "@/components/uploads/AuthAlert";
 import ErrorAlert from "@/components/uploads/ErrorAlert";
-import { getStoredTokens } from "@/services/google";
-import GoogleAuthButton from "@/components/GoogleAuthButton";
+import { useSupabaseAuth } from "@/contexts/supabase/SupabaseAuthContext";
 import { EnhancedDriveService } from "@/services/drive";
 
 const DashboardUploadSection: React.FC = () => {
   const [isGoogleAuthenticated, setIsGoogleAuthenticated] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploadType, setUploadType] = useState<"simple" | "advanced">("simple");
+  const { session } = useSupabaseAuth();
 
   useEffect(() => {
     const checkGoogleAuth = async () => {
       try {
-        // Check if we have valid Google tokens
-        const tokens = await getStoredTokens();
-        
-        if (!tokens?.access_token) {
+        // Check if we have Google auth via Supabase session
+        if (!session?.provider_token) {
           setIsGoogleAuthenticated(false);
           return;
         }
@@ -40,17 +38,7 @@ const DashboardUploadSection: React.FC = () => {
     };
     
     checkGoogleAuth();
-    
-    // Listen for token changes
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'google_tokens') {
-        checkGoogleAuth();
-      }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  }, [session]);
 
   const handleClearError = () => {
     setError(null);
@@ -72,22 +60,10 @@ const DashboardUploadSection: React.FC = () => {
       
       {isGoogleAuthenticated === false && (
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-md mb-4">
-          <h3 className="text-lg font-medium text-blue-800 mb-2">Σύνδεση με Google Drive</h3>
+          <h3 className="text-lg font-medium text-blue-800 mb-2">Απαιτείται σύνδεση με Google Drive</h3>
           <p className="text-blue-700 mb-3">
-            Για να ανεβάσετε αρχεία στο Google Drive, παρακαλώ συνδεθείτε με τον λογαριασμό σας Google.
+            Για να χρησιμοποιήσετε την εφαρμογή με το Google Drive, παρακαλώ αποσυνδεθείτε και συνδεθείτε ξανά επιλέγοντας τη σύνδεση με Google.
           </p>
-          <GoogleAuthButton 
-            className="bg-white hover:bg-gray-50" 
-            onSuccess={async () => {
-              // Force re-check of authentication after success
-              const tokens = await getStoredTokens();
-              if (tokens?.access_token) {
-                const driveService = EnhancedDriveService.getInstance();
-                const isDriveInitialized = await driveService.initialize();
-                setIsGoogleAuthenticated(isDriveInitialized);
-              }
-            }}
-          />
         </div>
       )}
       

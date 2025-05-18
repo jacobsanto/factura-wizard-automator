@@ -9,12 +9,12 @@ import { NavigationMenu, NavigationMenuList, NavigationMenuItem } from "@/compon
 import { LogOut, Settings, HelpCircle, Home, Upload, ToggleLeft, ToggleRight, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, UserInfo } from "@/utils/userUtils";
-import { getStoredTokens, clearTokens } from "@/services/google";
 
 const Header: React.FC = () => {
   const {
     isAuthenticated,
     user,
+    session,
     signOut
   } = useSupabaseAuth();
   const {
@@ -32,28 +32,10 @@ const Header: React.FC = () => {
     };
     if (isAuthenticated) {
       fetchUser();
+      // Check if user has Google auth from Supabase session
+      setHasGoogleAuth(!!session?.provider_token);
     }
-  }, [isAuthenticated, user]);
-  
-  useEffect(() => {
-    // Check Google auth status
-    const checkGoogleAuth = async () => {
-      const tokens = await getStoredTokens();
-      setHasGoogleAuth(!!tokens?.access_token);
-    };
-    
-    checkGoogleAuth();
-    
-    // Setup listener for changes to localStorage
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'google_tokens') {
-        checkGoogleAuth();
-      }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  }, [isAuthenticated, user, session]);
   
   const handleNavigate = (tab: string) => {
     navigate(`/?tab=${tab}`);
@@ -61,11 +43,6 @@ const Header: React.FC = () => {
   
   const handleSettingsClick = () => {
     navigate('/?tab=settings');
-  };
-  
-  const handleGoogleSignOut = async () => {
-    await clearTokens();
-    setHasGoogleAuth(false);
   };
 
   // Use either the currentUser or create a basic user object if not available
@@ -136,14 +113,6 @@ const Header: React.FC = () => {
                     <Settings className="h-4 w-4 mr-2" />
                     <span>Ρυθμίσεις</span>
                   </DropdownMenuItem>
-                  
-                  {hasGoogleAuth && (
-                    <DropdownMenuItem onClick={handleGoogleSignOut} className="cursor-pointer">
-                      <LogOut className="h-4 w-4 mr-2" />
-                      <span>Αποσύνδεση από Google</span>
-                    </DropdownMenuItem>
-                  )}
-                  
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => signOut()} className="text-red-500 cursor-pointer">
                     <LogOut className="h-4 w-4 mr-2" />

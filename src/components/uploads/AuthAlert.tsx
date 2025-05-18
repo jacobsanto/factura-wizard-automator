@@ -13,7 +13,7 @@ const AuthAlert: React.FC<AuthAlertProps> = ({ isDriveAuthenticated }) => {
     <Alert variant="destructive" className="mb-4">
       <AlertTitle>Δεν είστε συνδεδεμένοι στο Google Drive</AlertTitle>
       <AlertDescription>
-        Παρακαλώ συνδεθείτε στο Google για να μπορέσετε να ανεβάσετε αρχεία.
+        Για πρόσβαση στο Google Drive, παρακαλώ αποσυνδεθείτε και συνδεθείτε ξανά επιλέγοντας τη σύνδεση με Google από την αρχική σελίδα.
       </AlertDescription>
     </Alert>
   );
