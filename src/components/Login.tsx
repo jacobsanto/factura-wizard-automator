@@ -1,15 +1,82 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useLoginHandler } from "@/hooks/useLoginHandler";
+import { useAuth } from "@/contexts/auth";
 import { useDebugMode } from "@/hooks/useDebugMode";
 import { AuthErrorMessage } from "@/components/login/AuthErrorMessage";
 import { DebugPanel } from "@/components/login/DebugPanel";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Login: React.FC = () => {
-  const { isLoading, authError, handleSignIn, testGoogleConnection } = useLoginHandler();
+  const { isLoading, signIn, signUp } = useAuth();
   const { showDebug, handleClearLocalStorage } = useDebugMode();
+  
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("signin");
+
+  const handleSignIn = async (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    
+    if (!email || !password) {
+      setAuthError("Παρακαλώ συμπληρώστε όλα τα πεδία.");
+      return;
+    }
+    
+    try {
+      const { error } = await signIn(email, password);
+      if (error) {
+        setAuthError(error.message || "Προέκυψε σφάλμα κατά τη σύνδεση.");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setAuthError("Προέκυψε σφάλμα κατά τη σύνδεση. Παρακαλώ δοκιμάστε ξανά.");
+    }
+  };
+
+  const handleSignUp = async (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    
+    if (!email || !password) {
+      setAuthError("Παρακαλώ συμπληρώστε όλα τα πεδία.");
+      return;
+    }
+    
+    if (password.length < 6) {
+      setAuthError("Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες.");
+      return;
+    }
+    
+    try {
+      const { error } = await signUp(email, password);
+      if (error) {
+        setAuthError(error.message || "Προέκυψε σφάλμα κατά την εγγραφή.");
+      }
+    } catch (error) {
+      console.error("Signup error:", error);
+      setAuthError("Προέκυψε σφάλμα κατά την εγγραφή. Παρακαλώ δοκιμάστε ξανά.");
+    }
+  };
+
+  const testSupabaseConnection = async () => {
+    try {
+      const { data, error } = await fetch('/api/test-supabase-connection');
+      if (error) {
+        setAuthError(`Σφάλμα σύνδεσης με το Supabase: ${error.message}`);
+      } else {
+        setAuthError(null);
+      }
+    } catch (error) {
+      console.error("Test connection error:", error);
+      setAuthError("Προέκυψε σφάλμα κατά τον έλεγχο σύνδεσης.");
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
@@ -26,50 +93,99 @@ const Login: React.FC = () => {
             Αυτοματισμός Παραστατικών
           </CardTitle>
           <CardDescription className="text-gray-500">
-            Συνδεθείτε με τον λογαριασμό Google Workspace για να συνεχίσετε
+            Συνδεθείτε για να συνεχίσετε
           </CardDescription>
         </CardHeader>
         
         <CardContent className="space-y-4">
-          <div className="space-y-2 text-center">
-            <p className="text-sm text-muted-foreground">
-              Το εργαλείο αυτό χρειάζεται πρόσβαση στο Gmail, Google Drive και Google Sheets για να λειτουργήσει.
-            </p>
-          </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="signin">Σύνδεση</TabsTrigger>
+              <TabsTrigger value="signup">Εγγραφή</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="signin" className="space-y-4 pt-4">
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="your.email@example.com" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Κωδικός</Label>
+                  <Input 
+                    id="password" 
+                    type="password" 
+                    placeholder="••••••••" 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button 
+                  type="submit"
+                  className="w-full bg-brand-blue hover:bg-blue-700"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Σύνδεση...' : 'Σύνδεση'}
+                </Button>
+              </form>
+            </TabsContent>
+            
+            <TabsContent value="signup" className="space-y-4 pt-4">
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email">Email</Label>
+                  <Input 
+                    id="signup-email" 
+                    type="email" 
+                    placeholder="your.email@example.com" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password">Κωδικός</Label>
+                  <Input 
+                    id="signup-password" 
+                    type="password" 
+                    placeholder="••••••••" 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <p className="text-xs text-gray-500">
+                    Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες
+                  </p>
+                </div>
+                <Button 
+                  type="submit"
+                  className="w-full bg-brand-blue hover:bg-blue-700"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Εγγραφή...' : 'Εγγραφή'}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
         </CardContent>
         
         <CardFooter className="flex flex-col space-y-4">
-          <Button 
-            onClick={handleSignIn} 
-            disabled={isLoading} 
-            className="w-full bg-brand-blue hover:bg-blue-700"
-          >
-            {isLoading ? (
-              <div className="flex items-center justify-center">
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Σύνδεση...</span>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center">
-                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                  <path fill="currentColor" d="M21.35 11.1h-9.17v2.73h6.51c-.33 3.81-3.5 5.44-6.5 5.44C8.36 19.27 5 16.25 5 12c0-4.1 3.2-7.27 7.2-7.27 3.09 0 4.9 1.97 4.9 1.97L19 4.72S16.56 2 12.1 2C6.42 2 2.03 6.8 2.03 12c0 5.05 4.13 10 10.22 10 5.35 0 9.25-3.67 9.25-9.09 0-1.15-.15-1.81-.15-1.81z" />
-                </svg>
-                <span>Σύνδεση με Google</span>
-              </div>
-            )}
-          </Button>
-          
           {/* Test connection button */}
           <Button 
-            onClick={testGoogleConnection} 
+            onClick={testSupabaseConnection} 
             variant="outline" 
             className="w-full text-sm"
             disabled={isLoading}
           >
-            Έλεγχος σύνδεσης με Google
+            Έλεγχος σύνδεσης με Supabase
           </Button>
           
           {/* Error message display */}
