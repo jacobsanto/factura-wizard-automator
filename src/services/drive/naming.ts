@@ -1,4 +1,3 @@
-
 /**
  * Utilities for file and folder naming
  */
@@ -54,38 +53,44 @@ function normalizeDate(input: string): string {
 
 /**
  * Generate a standardized filename for a document
+ * Format: Παρ_[ClientName]_[IssuerName]_[InvoiceNumber]_[Date]_[Amount][Currency].pdf
  */
 export const generateFilename = async (docData: DocumentData): Promise<string> => {
+  const cleanedClientName = sanitizeText(docData.clientName || "Unknown_Client");
   const cleanedSupplier = sanitizeText(docData.supplier);
   const cleanedNumber = sanitizeText(docData.documentNumber);
   const cleanedDate = normalizeDate(docData.date);
   const cleanedAmount = sanitizeText(docData.amount.toString());
   
-  return `Παρ_${cleanedSupplier}_${cleanedNumber}_${cleanedDate}_${cleanedAmount}${docData.currency}.pdf`;
+  return `Παρ_${cleanedClientName}_${cleanedSupplier}_${cleanedNumber}_${cleanedDate}_${cleanedAmount}${docData.currency}.pdf`;
 };
 
 /**
  * Generate invoice filename with extended options
+ * Format: Παρ_[ClientName]_[IssuerName]_[InvoiceNumber]_[Date]_[Amount][Currency].pdf
  */
 export function generateInvoiceFilename({
+  clientName,
   issuer,
   invoiceNumber,
   date,
   amount,
   currency,
 }: {
+  clientName: string;
   issuer: string;
   invoiceNumber: string;
   date: string;
   amount: string;
   currency: string;
 }): string {
+  const cleanedClientName = sanitizeText(clientName || "Unknown_Client");
   const cleanedIssuer = sanitizeText(issuer);
   const cleanedInvoice = sanitizeText(invoiceNumber);
   const cleanedDate = normalizeDate(date);
   const cleanedAmount = sanitizeText(amount);
 
-  return `Παρ_${cleanedIssuer}_${cleanedInvoice}_${cleanedDate}_${cleanedAmount}${currency}.pdf`;
+  return `Παρ_${cleanedClientName}_${cleanedIssuer}_${cleanedInvoice}_${cleanedDate}_${cleanedAmount}${currency}.pdf`;
 }
 
 /**

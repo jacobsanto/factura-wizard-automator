@@ -30,9 +30,10 @@ export const createFilename = async (docData: DocumentData): Promise<string> => 
 
 /**
  * Generate a filename for an invoice with options
+ * Format: Παρ_[ClientName]_[IssuerName]_[InvoiceNumber]_[Date]_[Amount][Currency].pdf
  */
 export const createFilenameWithOptions = (options: {
-  clientVat: string;
+  clientName: string;
   issuer: string;
   invoiceNumber: string;
   date: string;

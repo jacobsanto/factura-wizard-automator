@@ -13,6 +13,9 @@ export function extractVatNumber(text: string): string | null {
     /VAT(?:\s+|:|\s*#?\s*|number:?\s*)(\d{7,12})/i,
     /Tax ID(?:\s+|:|\s*#?\s*)([A-Z]{2}\d{7,12}|\d{7,12})/i,
     /ΑΦΜ(?:\s+|:|\s*#?\s*|number:?\s*)(\d{9})/i,  // Greek VAT
+    /Α\.?Φ\.?Μ\.?(?:\s+|:|\s*#?\s*)(\d{9})/i,     // Greek VAT alternative format
+    /ΑΦΜ[\s\:\.]*?πελάτη[\s\:\.]*?(\d{9})/i,      // Greek: client's VAT number
+    /Φ\.?Π\.?Α\.?(?:\s+|:|\s*#?\s*)([A-Z]{2}\d{7,12}|\d{7,12})/i, // FPA Greek
   ];
   
   for (const pattern of vatPatterns) {
@@ -32,6 +35,9 @@ export function extractClientName(text: string): string | null {
     /customer:?\s*([^,\n]+)/i,
     /client:?\s*([^,\n]+)/i,
     /πελάτης:?\s*([^,\n]+)/i,  // Greek
+    /στοιχεία πελάτη:?\s*([^,\n]+)/i, // Greek: client details
+    /επωνυμία(?:\s+|:|\s*#?\s*)([^,\n]+)/i, // Greek: business name
+    /προς(?:\s+|:|\s*#?\s*)([^,\n]+)/i, // Greek: To (client)
   ];
   
   for (const pattern of clientPatterns) {
@@ -51,6 +57,9 @@ export function extractIssuer(text: string): string | null {
     /issued by:?\s*([^,\n]+)/i,
     /company:?\s*([^,\n]+)/i,
     /εκδότης:?\s*([^,\n]+)/i,  // Greek
+    /επωνυμία εκδότη:?\s*([^,\n]+)/i, // Greek: issuer name
+    /στοιχεία εκδότη:?\s*([^,\n]+)/i, // Greek: issuer details
+    /στοιχεία επιχείρησης:?\s*([^,\n]+)/i, // Greek: business details
   ];
   
   for (const pattern of issuerPatterns) {
@@ -68,6 +77,8 @@ export function extractDate(text: string): string | null {
   const datePatterns = [
     /(?:date|invoice date|ημερομηνία)(?:\s+|:|\s*#?\s*)(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4})/i,
     /(?:date|invoice date|ημερομηνία)(?:\s+|:|\s*#?\s*)(\d{4}[\/\.\-]\d{1,2}[\/\.\-]\d{1,2})/i,
+    /ημ(?:\/|\.)?(?:\s+|:|\s*#?\s*)(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4})/i, // Greek abbreviated
+    /έκδοση(?:\s+|:|\s*#?\s*)(\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4})/i, // Greek: issued on
   ];
   
   for (const pattern of datePatterns) {
@@ -104,6 +115,9 @@ export function extractInvoiceNumber(text: string): string | null {
   const invoiceNumberPatterns = [
     /invoice(?:\s+|:|\s*#?\s*|number:?\s*)([A-Za-z0-9\-_]+)/i,
     /τιμολόγιο(?:\s+|:|\s*#?\s*|number:?\s*)([A-Za-z0-9\-_]+)/i,  // Greek
+    /αριθμός(?:\s+|:|\s*#?\s*)([A-Za-z0-9\-_]+)/i, // Greek: number
+    /αρ\.?τιμ\.?(?:\s+|:|\s*#?\s*)([A-Za-z0-9\-_]+)/i, // Greek abbreviated
+    /αρ\.?παρ\.?(?:\s+|:|\s*#?\s*)([A-Za-z0-9\-_]+)/i, // Greek abbreviated document
   ];
   
   for (const pattern of invoiceNumberPatterns) {
@@ -122,6 +136,9 @@ export function extractAmount(text: string): string | null {
     /total(?:\s+|:|\s*#?\s*)([0-9.,]+)/i,
     /amount(?:\s+|:|\s*#?\s*)([0-9.,]+)/i,
     /σύνολο(?:\s+|:|\s*#?\s*)([0-9.,]+)/i,  // Greek
+    /συνολο(?:\s+|:|\s*#?\s*)([0-9.,]+)/i,  // Greek without accent
+    /πληρωτέο(?:\s+|:|\s*#?\s*)([0-9.,]+)/i, // Greek: payable
+    /συν\.?(?:\s+|:|\s*#?\s*)([0-9.,]+)/i, // Greek abbreviated
   ];
   
   for (const pattern of amountPatterns) {
@@ -139,7 +156,7 @@ export function extractAmount(text: string): string | null {
  */
 export function extractCurrency(text: string): string | null {
   // Look for common currency symbols and codes
-  if (text.includes('€') || text.includes('EUR') || text.includes('euro')) return '€';
+  if (text.includes('€') || text.includes('EUR') || text.includes('euro') || text.includes('ευρώ')) return '€';
   if (text.includes('$') || text.includes('USD') || text.includes('dollar')) return '$';
   if (text.includes('£') || text.includes('GBP') || text.includes('pound')) return '£';
   

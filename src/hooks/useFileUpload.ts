@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { extractTextFromPdf } from "@/utils/pdfUtils";
+import { extractTextFromPdf, extractTextFromPdfAdvanced } from "@/utils/pdfUtils";
 import { extractInvoiceDataWithGpt } from "@/api/gptApi";
 
 interface InvoiceData {
@@ -71,47 +71,81 @@ export function useFileUpload(): UseFileUploadReturn {
     setParsing(true);
     
     try {
-      // Extract text from PDF
-      console.log("Extracting text from PDF...");
-      const extractedText = await extractTextFromPdf(file);
-      console.log("Text extraction complete", { 
+      // Process with GPT first
+      console.log("Processing PDF with GPT...");
+      try {
+        const extractedData = await extractInvoiceDataWithGpt(file);
+        console.log("GPT processing complete", extractedData);
+        
+        if (extractedData && extractedData.vatNumber !== "unknown") {
+          const mappedData: InvoiceData = {
+            clientVat: extractedData.vatNumber !== "unknown" ? extractedData.vatNumber : "",
+            clientName: extractedData.clientName !== "unknown" ? extractedData.clientName : "",
+            issuer: extractedData.issuer !== "unknown" ? extractedData.issuer : "",
+            invoiceNumber: extractedData.documentNumber !== "unknown" ? extractedData.documentNumber : "",
+            date: extractedData.date !== "unknown" ? extractedData.date : "",
+            amount: extractedData.amount !== "unknown" ? extractedData.amount : "",
+            currency: extractedData.currency !== "unknown" ? extractedData.currency : "€"
+          };
+          
+          console.log("Setting extracted data from GPT", mappedData);
+          setExtractedData(mappedData);
+          
+          toast({
+            title: "Επιτυχία",
+            description: "Τα στοιχεία του τιμολογίου εξήχθησαν επιτυχώς με AI",
+          });
+          
+          setParsing(false);
+          return;
+        } else {
+          console.log("GPT extraction didn't provide sufficient data, trying advanced extraction");
+        }
+      } catch (gptError) {
+        console.warn("GPT extraction failed:", gptError);
+      }
+      
+      // If GPT fails, try the advanced extraction (PDF.js + OCR)
+      console.log("Falling back to advanced extraction with OCR...");
+      const extractedText = await extractTextFromPdfAdvanced(file);
+      console.log("Advanced text extraction complete", {
         textLength: extractedText.length,
-        textPreview: extractedText.substring(0, 100) + '...' 
+        textPreview: extractedText.substring(0, 100) + '...'
       });
       
-      // Process with GPT
-      console.log("Processing extracted text with GPT...");
-      const extractedData = await extractInvoiceDataWithGpt(extractedText);
-      console.log("GPT processing complete", extractedData);
+      // Try to extract specific fields using regex patterns
+      const { 
+        extractVatNumber, extractClientName, extractIssuer,
+        extractDate, extractInvoiceNumber, extractAmount, extractCurrency
+      } = await import("@/api/extractionPatterns");
       
-      if (extractedData) {
-        const mappedData: InvoiceData = {
-          clientVat: extractedData.vatNumber !== "unknown" ? extractedData.vatNumber : "",
-          clientName: extractedData.clientName !== "unknown" ? extractedData.clientName : "",
-          issuer: extractedData.issuer !== "unknown" ? extractedData.issuer : "",
-          invoiceNumber: extractedData.documentNumber !== "unknown" ? extractedData.documentNumber : "",
-          date: extractedData.date !== "unknown" ? extractedData.date : "",
-          amount: extractedData.amount !== "unknown" ? extractedData.amount : "",
-          currency: extractedData.currency !== "unknown" ? extractedData.currency : "€"
-        };
-        
-        console.log("Setting extracted data", mappedData);
-        setExtractedData(mappedData);
-        
-        toast({
-          title: "Επιτυχία",
-          description: "Τα στοιχεία του τιμολογίου εξήχθησαν επιτυχώς",
-        });
-      } else {
-        console.warn("No data extracted from GPT processing");
-        toast({
-          variant: "destructive",
-          title: "Προειδοποίηση",
-          description: "Δεν ήταν δυνατή η εξαγωγή στοιχείων από το PDF",
-        });
-      }
+      const vatNumber = extractVatNumber(extractedText) || "";
+      const clientName = extractClientName(extractedText) || "";
+      const issuer = extractIssuer(extractedText) || "";
+      const date = extractDate(extractedText) || "";
+      const invoiceNumber = extractInvoiceNumber(extractedText) || "";
+      const amount = extractAmount(extractedText) || "";
+      const currency = extractCurrency(extractedText) || "€";
+      
+      const patternData: InvoiceData = {
+        clientVat: vatNumber,
+        clientName,
+        issuer,
+        invoiceNumber,
+        date,
+        amount,
+        currency
+      };
+      
+      console.log("Setting extracted data from patterns", patternData);
+      setExtractedData(patternData);
+      
+      toast({
+        title: "Επιτυχία",
+        description: "Τα στοιχεία του τιμολογίου εξήχθησαν επιτυχώς με OCR",
+      });
     } catch (error) {
-      console.error("Error during PDF parsing or GPT processing:", error);
+      console.error("Error during PDF parsing or processing:", error);
       toast({
         variant: "destructive",
         title: "Σφάλμα",

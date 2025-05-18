@@ -4,6 +4,16 @@
  */
 import { DocumentData } from "@/types";
 import { extractInvoiceDataWithGpt } from "@/api/gptApi";
+import { extractTextFromPdf, extractTextFromPdfAdvanced } from "@/utils/pdfUtils";
+import { 
+  extractVatNumber,
+  extractClientName,
+  extractIssuer,
+  extractDate,
+  extractInvoiceNumber,
+  extractAmount,
+  extractCurrency
+} from "@/api/extractionPatterns";
 
 export class DataExtractorService {
   private static instance: DataExtractorService;
@@ -21,7 +31,7 @@ export class DataExtractorService {
   }
 
   /**
-   * Extract data from a PDF file
+   * Extract data from a PDF file using multi-tiered approach
    */
   async extractDataFromPdf(pdfBlob: Blob): Promise<DocumentData> {
     console.log("Attempting to extract data from PDF blob", {
@@ -30,37 +40,54 @@ export class DataExtractorService {
     });
     
     try {
-      // For basic text extraction from PDFs, we would need to use pdf.js or a similar library
-      // Since implementing that is outside the scope of this function,
-      // we'll use a simplified approach that extracts what data we can
-      // and falls back to generating plausible values
+      // First try using GPT extraction (highest accuracy)
+      try {
+        console.log("Attempting extraction with GPT");
+        const gptData = await this.extractWithGpt(pdfBlob);
+        
+        // If GPT returns meaningful data, use it
+        if (gptData.vatNumber !== "Unknown" && 
+            gptData.documentNumber !== "Unknown" && 
+            gptData.clientName !== "Unknown Client") {
+          
+          console.log("Successfully extracted data with GPT", gptData);
+          return gptData;
+        } else {
+          console.log("GPT extraction didn't provide sufficient data, falling back to other methods");
+        }
+      } catch (gptError) {
+        console.warn("GPT extraction failed, falling back to other methods", gptError);
+      }
       
-      // For a real implementation, this would be replaced with proper PDF text extraction
-      // and pattern matching for invoice fields
+      // If GPT fails, try multi-tiered extraction with PDF.js and OCR
+      console.log("Attempting multi-tiered extraction with PDF.js and OCR");
+      const extractedText = await extractTextFromPdfAdvanced(pdfBlob);
+      console.log("Text extracted successfully", {
+        textLength: extractedText.length,
+        textSample: extractedText.substring(0, 100) + "..."
+      });
       
-      const fileName = "unknown-document.pdf"; // In real implementation, this would come from the blob
-      
-      // For demo purposes, we'll generate a plausible data structure
-      // In production, you would extract this data from the PDF content
-      
-      const today = new Date();
-      const formattedDate = today.toISOString().split('T')[0]; // YYYY-MM-DD
-      
-      // For demo purposes: Generate data based on current timestamp to simulate different invoices
-      const timestamp = Date.now();
-      const randomVatPrefix = ["EL", "DE", "FR", "IT"][Math.floor(Math.random() * 4)];
+      // Extract data using patterns
+      const vatNumber = extractVatNumber(extractedText) || "Unknown";
+      const clientName = extractClientName(extractedText) || "Unknown Client";
+      const issuer = extractIssuer(extractedText) || "Unknown";
+      const date = extractDate(extractedText) || new Date().toISOString().split('T')[0];
+      const documentNumber = extractInvoiceNumber(extractedText) || "Unknown";
+      const amountString = extractAmount(extractedText) || "0";
+      const amount = parseFloat(amountString) || 0;
+      const currency = extractCurrency(extractedText) || "€";
       
       const extractedData = {
-        vatNumber: `${randomVatPrefix}${Math.floor(10000000 + Math.random() * 90000000)}`,
-        date: formattedDate,
-        documentNumber: `INV-${timestamp % 10000}`,
-        supplier: `Supplier-${timestamp % 100}`,
-        amount: parseFloat((Math.random() * 1000 + 50).toFixed(2)),
-        currency: "€",
-        clientName: `Client-${timestamp % 50}` // Add sample client name for demo
+        vatNumber,
+        date,
+        documentNumber,
+        supplier: issuer,
+        amount,
+        currency,
+        clientName
       };
 
-      console.log("Successfully extracted data from PDF:", extractedData);
+      console.log("Successfully extracted data from PDF using patterns:", extractedData);
       return extractedData;
     } catch (error) {
       console.error("Error extracting data from PDF:", error);
@@ -87,10 +114,8 @@ export class DataExtractorService {
   async extractWithGpt(pdfBlob: Blob): Promise<DocumentData> {
     console.log("Attempting to extract data from PDF using GPT");
     try {
-      // Convert blob to text for GPT processing
-      const arrayBuffer = await pdfBlob.arrayBuffer();
-      const textDecoder = new TextDecoder();
-      const pdfText = textDecoder.decode(arrayBuffer);
+      // First get the text from the PDF
+      const pdfText = await extractTextFromPdf(pdfBlob);
       
       console.log("PDF converted to text, sending to GPT API", { 
         textLength: pdfText.length,
@@ -114,7 +139,7 @@ export class DataExtractorService {
     } catch (error) {
       console.error("Error extracting with GPT:", error);
       console.log("Falling back to basic extraction method");
-      return this.extractDataFromPdf(pdfBlob);
+      throw error; // Let the calling function handle the fallback
     }
   }
 }
