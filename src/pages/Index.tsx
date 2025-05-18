@@ -7,11 +7,38 @@ import Header from "@/components/Header";
 import Login from "@/components/Login";
 import Dashboard from "@/components/Dashboard";
 import { forceResetAuthState } from "@/services/google";
+import { testSupabaseConnection } from "@/utils/supabaseTest";
+import { toast } from "@/components/ui/use-toast";
 
 const AppContent: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const [showHelp, setShowHelp] = useState(false);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
+  const [supabaseConnected, setSupabaseConnected] = useState<boolean | null>(null);
+  
+  // Test Supabase connection on mount
+  useEffect(() => {
+    const checkSupabaseConnection = async () => {
+      const isConnected = await testSupabaseConnection();
+      setSupabaseConnected(isConnected);
+      
+      if (isConnected) {
+        toast({
+          title: "Supabase Connected",
+          description: "Successfully connected to Supabase project.",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Supabase Connection Failed",
+          description: "Could not connect to Supabase. Check your configuration.",
+          variant: "destructive",
+        });
+      }
+    };
+    
+    checkSupabaseConnection();
+  }, []);
   
   // Add a timer to show the help button after a delay
   useEffect(() => {
@@ -50,6 +77,7 @@ const AppContent: React.FC = () => {
           <li>Has User Info: {localStorage.getItem("user") ? "Yes" : "No"}</li>
           <li>Loading State: {isLoading ? "Loading" : "Not Loading"}</li>
           <li>Auth State: {isAuthenticated ? "Authenticated" : "Not Authenticated"}</li>
+          <li>Supabase Connected: {supabaseConnected === null ? "Checking..." : supabaseConnected ? "Yes" : "No"}</li>
         </ul>
       </div>
     );
@@ -71,6 +99,15 @@ const AppContent: React.FC = () => {
           
           {/* Debug information */}
           {renderDebugInfo()}
+          
+          {/* Supabase connection status */}
+          {supabaseConnected !== null && (
+            <div className={`mt-4 p-2 rounded ${supabaseConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+              {supabaseConnected 
+                ? "Supabase connection successful!" 
+                : "Supabase connection failed. Check configuration."}
+            </div>
+          )}
           
           {/* Help button with improved visibility */}
           {showHelp && (
@@ -103,6 +140,12 @@ const AppContent: React.FC = () => {
           </main>
           <footer className="py-4 px-6 border-t text-center text-sm text-gray-500">
             © {new Date().getFullYear()} Αριβία Γκρουπ - Αυτοματισμός Παραστατικών
+            {supabaseConnected !== null && (
+              <span className="ml-2 inline-flex items-center">
+                <span className={`h-2 w-2 rounded-full mr-1 ${supabaseConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                {supabaseConnected ? 'Supabase connected' : 'Supabase disconnected'}
+              </span>
+            )}
           </footer>
         </>
       ) : (
