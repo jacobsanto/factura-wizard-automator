@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { exchangeCodeForTokens, storeTokens } from "@/services/google";
@@ -30,7 +31,16 @@ const OAuthCallback: React.FC = () => {
   };
   
   useEffect(() => {
+    let hasProcessed = false;
+    
     const processAuthCode = async () => {
+      if (hasProcessed) {
+        logStep("Skipping duplicate processing attempt");
+        return;
+      }
+      
+      hasProcessed = true;
+      
       try {
         logStep("OAuth callback page loaded");
         
