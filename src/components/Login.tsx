@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +7,7 @@ import { AuthErrorMessage } from "@/components/login/AuthErrorMessage";
 import { DebugPanel } from "@/components/login/DebugPanel";
 import { DevModeToggle } from "@/components/login/DevModeToggle";
 import { useLoginHandler } from "@/hooks/useLoginHandler";
+
 const Login: React.FC = () => {
   const {
     isLoading,
@@ -17,8 +19,20 @@ const Login: React.FC = () => {
     showDebug,
     handleClearLocalStorage
   } = useDebugMode();
-  return <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-      <Card className="w-full max-w-md shadow-lg">
+  
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
+      {/* Background image with opacity */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center z-0 opacity-85"
+        style={{ 
+          backgroundImage: `url('/lovable-uploads/374fd195-a90b-4dc1-ab99-5df46f383f45.png')`,
+          opacity: '0.85'
+        }}
+      ></div>
+      
+      {/* Content with relative z-index to appear above the background */}
+      <Card className="w-full max-w-md shadow-lg z-10 bg-white/95">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center">
             <img alt="Factura Automations Logo" src="/lovable-uploads/fd2ba1a1-1352-49ce-910a-79da80c70fe9.png" className="logo-debug-trigger h-16 w-auto mb-4 cursor-pointer object-contain" />
@@ -49,7 +63,6 @@ const Login: React.FC = () => {
               </div>
               <span className="text-base font-medium">
                 {isLoading ? 'Σύνδεση με Google...' : 'Σύνδεση με Google'}
-                
               </span>
             </Button>
           </div>
@@ -83,6 +96,8 @@ const Login: React.FC = () => {
           {showDebug && <DebugPanel handleClearLocalStorage={handleClearLocalStorage} />}
         </CardFooter>
       </Card>
-    </div>;
+    </div>
+  );
 };
+
 export default Login;
