@@ -30,9 +30,9 @@ const Login: React.FC = () => {
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center">
             <img 
-              alt="Arivia Group Logo" 
-              src="/lovable-uploads/9e419dda-f61f-41e7-ac02-301a7ae32f6f.png" 
-              className="logo-debug-trigger h-8 w-auto mb-4 cursor-pointer object-fill" 
+              alt="Factura Automations Logo" 
+              src="/lovable-uploads/fd2ba1a1-1352-49ce-910a-79da80c70fe9.png" 
+              className="logo-debug-trigger h-16 w-auto mb-4 cursor-pointer object-contain" 
             />
           </div>
           <CardTitle className="text-2xl font-bold text-center">
