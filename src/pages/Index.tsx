@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect } from "react";
-import { AuthProvider } from "@/contexts/AuthContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useSupabaseAuth } from "@/contexts/supabase/SupabaseAuthContext";
 import Header from "@/components/Header";
 import Login from "@/components/Login";
 import Dashboard from "@/components/Dashboard";
@@ -11,7 +10,7 @@ import { testSupabaseConnection } from "@/utils/supabaseTest";
 import { toast } from "@/components/ui/use-toast";
 
 const AppContent: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useSupabaseAuth();
   const [showHelp, setShowHelp] = useState(false);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [supabaseConnected, setSupabaseConnected] = useState<boolean | null>(null);
@@ -157,11 +156,9 @@ const AppContent: React.FC = () => {
 
 const Index: React.FC = () => {
   return (
-    <AuthProvider>
-      <SettingsProvider>
-        <AppContent />
-      </SettingsProvider>
-    </AuthProvider>
+    <SettingsProvider>
+      <AppContent />
+    </SettingsProvider>
   );
 };
 

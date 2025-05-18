@@ -2,13 +2,13 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/contexts/auth";
+import { useSupabaseAuth } from "@/contexts/supabase/SupabaseAuthContext";
 import { useDebugMode } from "@/hooks/useDebugMode";
 import { AuthErrorMessage } from "@/components/login/AuthErrorMessage";
 import { DebugPanel } from "@/components/login/DebugPanel";
 
 const Login: React.FC = () => {
-  const { isLoading, signInWithGoogle } = useAuth();
+  const { isLoading, signInWithGoogle } = useSupabaseAuth();
   const { showDebug, handleClearLocalStorage } = useDebugMode();
   
   const [authError, setAuthError] = useState<string | null>(null);

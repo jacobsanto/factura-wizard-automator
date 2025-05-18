@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/auth";
+import { useSupabaseAuth } from "@/contexts/supabase/SupabaseAuthContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
@@ -13,17 +13,15 @@ import {
 import { 
   NavigationMenu,
   NavigationMenuList,
-  NavigationMenuItem,
-  NavigationMenuLink
+  NavigationMenuItem
 } from "@/components/ui/navigation-menu";
 import { LogOut, Settings, HelpCircle, Home, Upload } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { getCurrentUser, UserInfo } from "@/utils/userUtils";
 
 const Header: React.FC = () => {
-  const { isAuthenticated, user, signOut } = useAuth();
+  const { isAuthenticated, user, signOut } = useSupabaseAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [currentUser, setCurrentUser] = useState<UserInfo | null>(null);
   
   useEffect(() => {
