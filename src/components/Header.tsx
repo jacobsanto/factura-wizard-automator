@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/auth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,13 +18,24 @@ import {
 } from "@/components/ui/navigation-menu";
 import { LogOut, Settings, HelpCircle, Home, Upload } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { getCurrentUser } from "@/utils/userUtils";
+import { getCurrentUser, UserInfo } from "@/utils/userUtils";
 
 const Header: React.FC = () => {
   const { isAuthenticated, user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const currentUser = getCurrentUser();
+  const [currentUser, setCurrentUser] = useState<UserInfo | null>(null);
+  
+  useEffect(() => {
+    const fetchUser = async () => {
+      const userInfo = await getCurrentUser();
+      setCurrentUser(userInfo);
+    };
+    
+    if (isAuthenticated) {
+      fetchUser();
+    }
+  }, [isAuthenticated, user]);
 
   const handleNavigate = (tab: string) => {
     navigate(`/?tab=${tab}`);
@@ -34,8 +45,12 @@ const Header: React.FC = () => {
     navigate('/?tab=settings');
   };
 
-  // Use either the currentUser from our utility or the user from auth context
-  const displayUser = currentUser || user;
+  // Use either the currentUser or create a basic user object if not available
+  const displayUser: UserInfo = currentUser || { 
+    id: user?.id,
+    email: user?.email || "user@example.com", 
+    name: "User" 
+  };
 
   return (
     <header className="bg-white shadow-sm border-b px-6 py-3">
@@ -89,14 +104,14 @@ const Header: React.FC = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger className="focus:outline-none">
                   <Avatar className="h-8 w-8 border">
-                    <AvatarImage src={displayUser?.picture} />
-                    <AvatarFallback>{displayUser?.name?.charAt(0) || "U"}</AvatarFallback>
+                    <AvatarImage src={displayUser.picture} />
+                    <AvatarFallback>{displayUser.name?.charAt(0) || "U"}</AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium">{displayUser?.name || "User"}</p>
-                    <p className="text-xs text-muted-foreground">{displayUser?.email || "user@example.com"}</p>
+                    <p className="text-sm font-medium">{displayUser.name || "User"}</p>
+                    <p className="text-xs text-muted-foreground">{displayUser.email || "user@example.com"}</p>
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSettingsClick} className="cursor-pointer">

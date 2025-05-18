@@ -9,6 +9,8 @@ import { DebugPanel } from "@/components/login/DebugPanel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { testSupabaseConnection } from "@/utils/supabaseTest";
+import { toast } from "@/hooks/use-toast";
 
 const Login: React.FC = () => {
   const { isLoading, signIn, signUp } = useAuth();
@@ -64,13 +66,23 @@ const Login: React.FC = () => {
     }
   };
 
-  const testSupabaseConnection = async () => {
+  const testConnection = async () => {
     try {
-      const { data, error } = await fetch('/api/test-supabase-connection');
-      if (error) {
-        setAuthError(`Σφάλμα σύνδεσης με το Supabase: ${error.message}`);
-      } else {
+      const isConnected = await testSupabaseConnection();
+      
+      if (isConnected) {
+        toast({
+          title: "Επιτυχής σύνδεση",
+          description: "Η σύνδεση με το Supabase είναι εφικτή.",
+        });
         setAuthError(null);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Σφάλμα σύνδεσης",
+          description: "Δεν ήταν δυνατή η σύνδεση με το Supabase.",
+        });
+        setAuthError("Σφάλμα σύνδεσης με το Supabase.");
       }
     } catch (error) {
       console.error("Test connection error:", error);
@@ -180,7 +192,7 @@ const Login: React.FC = () => {
         <CardFooter className="flex flex-col space-y-4">
           {/* Test connection button */}
           <Button 
-            onClick={testSupabaseConnection} 
+            onClick={testConnection} 
             variant="outline" 
             className="w-full text-sm"
             disabled={isLoading}
