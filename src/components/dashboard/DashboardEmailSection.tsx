@@ -4,9 +4,9 @@ import { EmailData } from "@/types";
 import EmailList from "../EmailList";
 import DashboardButton from "./DashboardButton";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import GoogleAuthButton from "../GoogleAuthButton";
 import { checkAndFixAuthState, getStoredTokens } from "@/services/google";
 import { useToast } from "@/hooks/use-toast";
+import { useSupabaseAuth } from "@/contexts/supabase/SupabaseAuthContext";
 
 interface DashboardEmailSectionProps {
   emails: EmailData[];
@@ -24,24 +24,32 @@ const DashboardEmailSection: React.FC<DashboardEmailSectionProps> = ({
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [hasGoogleAuth, setHasGoogleAuth] = useState<boolean | null>(null);
   const { toast } = useToast();
+  const { session } = useSupabaseAuth();
   
   // Check if Google auth is available on mount and when tokens change
   useEffect(() => {
     const checkGoogleAuth = async () => {
+      // Check if we have Google auth via Supabase session
+      if (session?.provider_token) {
+        setHasGoogleAuth(true);
+        return;
+      }
+      
+      // Fallback to checking stored tokens
       const tokens = await getStoredTokens();
       setHasGoogleAuth(!!tokens?.access_token);
     };
     
     checkGoogleAuth();
     
-    // Re-check when local storage changes
+    // Re-check when local storage changes or session changes
     const handleStorageChange = async () => {
       await checkGoogleAuth();
     };
     
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  }, [session]);
   
   const handleFetchEmails = async () => {
     setFetchError(null);
@@ -83,9 +91,6 @@ const DashboardEmailSection: React.FC<DashboardEmailSectionProps> = ({
       <div className="flex flex-wrap justify-between items-center gap-2">
         <h2 className="text-xl font-semibold">Emails με Παραστατικά</h2>
         <div className="flex gap-2">
-          {!hasGoogleAuth && (
-            <GoogleAuthButton className="text-gray-600" onSuccess={fetchEmails} />
-          )}
           <DashboardButton 
             className="bg-brand-blue hover:bg-blue-700" 
             onClick={handleFetchEmails} 
@@ -106,11 +111,8 @@ const DashboardEmailSection: React.FC<DashboardEmailSectionProps> = ({
       {!hasGoogleAuth && (
         <Alert variant="default" className="bg-amber-50 border-amber-200 text-amber-800">
           <AlertTitle>Απαιτείται σύνδεση με Google</AlertTitle>
-          <AlertDescription className="flex flex-col gap-2">
-            <p>Για να δείτε τα emails σας με παραστατικά, παρακαλώ συνδεθείτε με το Google.</p>
-            <GoogleAuthButton 
-              className="bg-amber-100 border-amber-200 text-amber-800 hover:bg-amber-200 w-fit"
-            />
+          <AlertDescription>
+            <p>Για να δείτε τα emails σας με παραστατικά, παρακαλώ αποσυνδεθείτε και συνδεθείτε ξανά επιλέγοντας τη σύνδεση με Google από την αρχική σελίδα.</p>
           </AlertDescription>
         </Alert>
       )}
