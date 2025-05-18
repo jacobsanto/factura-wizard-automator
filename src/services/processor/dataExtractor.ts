@@ -3,7 +3,7 @@
  * Service for extracting data from PDF files
  */
 import { DocumentData } from "@/types";
-import { extractInvoiceDataWithGpt } from "@/api/gptApi";
+import { extractInvoiceDataWithGpt, extractInvoiceDataFromPdf } from "@/api/gptApi";
 import { extractTextFromPdf, extractTextFromPdfAdvanced } from "@/utils/pdfUtils";
 import { 
   extractVatNumber,
@@ -40,26 +40,62 @@ export class DataExtractorService {
     });
     
     try {
-      // First try using GPT extraction (highest accuracy)
+      // Step 1: Try using the direct PDF method with enhanced GPT
       try {
-        console.log("Attempting extraction with GPT");
-        const gptData = await this.extractWithGpt(pdfBlob);
+        console.log("Attempting extraction with enhanced GPT directly from PDF");
+        const gptData = await extractInvoiceDataFromPdf(pdfBlob);
         
         // If GPT returns meaningful data, use it
-        if (gptData.vatNumber !== "Unknown" && 
-            gptData.documentNumber !== "Unknown" && 
-            gptData.clientName !== "Unknown Client") {
+        if (gptData.vatNumber !== "unknown" && 
+            gptData.documentNumber !== "unknown" && 
+            gptData.clientName !== "unknown") {
           
-          console.log("Successfully extracted data with GPT", gptData);
-          return gptData;
+          console.log("Successfully extracted data with enhanced GPT", gptData);
+          return {
+            vatNumber: gptData.vatNumber,
+            date: gptData.date,
+            documentNumber: gptData.documentNumber,
+            supplier: gptData.issuer,
+            amount: parseFloat(gptData.amount) || 0,
+            currency: gptData.currency,
+            clientName: gptData.clientName
+          };
         } else {
-          console.log("GPT extraction didn't provide sufficient data, falling back to other methods");
+          console.log("Enhanced GPT extraction didn't provide sufficient data, trying other methods");
         }
-      } catch (gptError) {
-        console.warn("GPT extraction failed, falling back to other methods", gptError);
+      } catch (enhancedGptError) {
+        console.warn("Enhanced GPT extraction failed, falling back to other methods", enhancedGptError);
       }
       
-      // If GPT fails, try multi-tiered extraction with PDF.js and OCR
+      // Step 2: Try using the text extraction + GPT approach
+      try {
+        console.log("Attempting text extraction first, then GPT");
+        const extractedText = await extractTextFromPdf(pdfBlob);
+        const gptData = await extractInvoiceDataWithGpt(extractedText);
+        
+        // If GPT returns meaningful data, use it
+        if (gptData.vatNumber !== "unknown" && 
+            gptData.documentNumber !== "unknown" && 
+            gptData.clientName !== "unknown Client") {
+          
+          console.log("Successfully extracted data with GPT from text", gptData);
+          return {
+            vatNumber: gptData.vatNumber,
+            date: gptData.date,
+            documentNumber: gptData.documentNumber,
+            supplier: gptData.issuer,
+            amount: parseFloat(gptData.amount) || 0,
+            currency: gptData.currency,
+            clientName: gptData.clientName
+          };
+        } else {
+          console.log("GPT extraction from text didn't provide sufficient data, falling back to other methods");
+        }
+      } catch (gptError) {
+        console.warn("GPT extraction from text failed, falling back to other methods", gptError);
+      }
+      
+      // Step 3: If GPT fails, try multi-tiered extraction with PDF.js and OCR
       console.log("Attempting multi-tiered extraction with PDF.js and OCR");
       const extractedText = await extractTextFromPdfAdvanced(pdfBlob);
       console.log("Text extracted successfully", {
@@ -114,18 +150,10 @@ export class DataExtractorService {
   async extractWithGpt(pdfBlob: Blob): Promise<DocumentData> {
     console.log("Attempting to extract data from PDF using GPT");
     try {
-      // First get the text from the PDF
-      const pdfText = await extractTextFromPdf(pdfBlob);
+      // Use the direct PDF method
+      const extractedData = await extractInvoiceDataFromPdf(pdfBlob);
       
-      console.log("PDF converted to text, sending to GPT API", { 
-        textLength: pdfText.length,
-        excerpt: pdfText.substring(0, 100) + '...'
-      });
-      
-      // Use the GPT API to extract data
-      const extractedData = await extractInvoiceDataWithGpt(pdfText);
-      
-      console.log("GPT API returned data:", extractedData);
+      console.log("GPT extraction returned data:", extractedData);
       
       // Convert the string amount to number and ensure supplier field exists
       const resultData = {

@@ -1,15 +1,14 @@
 
 import { extractTextFromPdf } from "@/utils/pdfUtils";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * API endpoint to parse PDF files using GPT
- * This is a mock implementation that would be replaced by a real API endpoint
- * in a production environment
+ * This implementation tries to use the Supabase Edge Function first,
+ * then falls back to pattern matching if that fails
  */
 export async function handlePdfParsingRequest(req: Request): Promise<Response> {
   try {
-    // For demo purposes, we'll extract text from the PDF and use pattern matching
-    // In a real implementation, this would send the text to OpenAI API
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const promptText = formData.get("prompt") as string | null;
@@ -28,8 +27,30 @@ export async function handlePdfParsingRequest(req: Request): Promise<Response> {
     const text = await extractTextFromPdf(file);
     console.log("Extracted text length:", text.length);
     
-    // In a real implementation, this would be sent to OpenAI API
-    // For now, we'll use some pattern matching to extract data
+    // Try to use the Supabase Edge Function
+    try {
+      const { data, error } = await supabase.functions.invoke('invoice-gpt', {
+        body: { 
+          text: text,
+          prompt: promptText 
+        },
+      });
+      
+      if (!error && data) {
+        console.log("Edge function returned data:", data);
+        return new Response(
+          JSON.stringify(data),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      
+      console.warn("Edge function error or no data, falling back to pattern matching:", error);
+    } catch (edgeFunctionError) {
+      console.error("Error calling edge function:", edgeFunctionError);
+      // Continue to fallback
+    }
+    
+    // Fallback to pattern matching
     const result = {
       vatNumber: extractPattern(text, /(?:[Α|A]ΦΜ|[Α|A]\.?Φ\.?Μ\.?|VAT)[:|\s]*(\d{9,12})/i) || 
                   extractPattern(text, /(\d{9,12})/),
@@ -46,10 +67,7 @@ export async function handlePdfParsingRequest(req: Request): Promise<Response> {
       currency: extractPattern(text, /(?:ΣΥΝΟΛΟ|ΠΛΗΡΩΜΗ|TOTAL|AMOUNT)(?:\s|:)*\d+[,\.]\d+(?:\s)*([€|EUR|EURO|ΕΥΡΩ|USD|\$])/i) || "€"
     };
     
-    // Add random delay to simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    console.log("Extracted data:", result);
+    console.log("Extracted data using pattern matching:", result);
     
     return new Response(
       JSON.stringify(result),

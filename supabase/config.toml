@@ -5,3 +5,6 @@ project_id = "yjjfyjbgfvqcabgdncek"
 
 [functions.google-oauth]
 verify_jwt = true
+
+[functions.invoice-gpt]
+verify_jwt = true
