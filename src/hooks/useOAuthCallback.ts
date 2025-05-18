@@ -11,183 +11,147 @@ export function useOAuthCallback() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+
   const [status, setStatus] = useState<OAuthStatus>("loading");
   const [errorDetails, setErrorDetails] = useState<string>("");
   const [processingSteps, setProcessingSteps] = useState<string[]>([]);
+
   const hasProcessed = useRef(false);
-  
-  // Log processing steps with timestamps
+
   const logStep = (step: string) => {
-    const timestamp = new Date().toISOString().substring(11, 23); // HH:MM:SS.sss format
+    const timestamp = new Date().toISOString().substring(11, 23);
     const logEntry = `${timestamp} - ${step}`;
     console.log(logEntry);
-    setProcessingSteps(prev => [...prev, logEntry]);
+    setProcessingSteps((prev) => [...prev, logEntry]);
   };
 
-  // Safe navigation function to prevent redirect loops
   const safeNavigate = (path: string, delay: number) => {
     if (location.pathname === "/oauth2callback") {
-      logStep(`Safe navigation to ${path} with ${delay}ms delay`);
+      logStep(`Safe navigation to ${path} in ${delay}ms`);
       setTimeout(() => navigate(path), delay);
     } else {
-      logStep(`Navigation skipped - already navigated away from OAuth callback`);
+      logStep(`Navigation skipped: already redirected`);
     }
   };
-  
+
   useEffect(() => {
     const processAuthCode = async () => {
       if (hasProcessed.current) {
         logStep("Skipping duplicate processing attempt");
         return;
       }
-      
       hasProcessed.current = true;
-      
+
       try {
         logStep("OAuth callback page loaded");
-        
-        // Get the auth code from URL
+
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get("code");
         const error = urlParams.get("error");
-        
-        logStep("OAuth callback parameters processed");
-        logStep(`- Code exists: ${!!code}`);
-        logStep(`- Error: ${error || "none"}`);
-        logStep(`- Full URL: ${window.location.href}`);
-        logStep(`- Current Origin: ${window.location.origin}`);
-        logStep(`- Expected redirect URI: ${GOOGLE_REDIRECT_URI}`);
-        
+
+        logStep(`Code: ${!!code}, Error: ${error || "none"}`);
+        logStep(`Full URL: ${window.location.href}`);
+        logStep(`Expected redirect: ${GOOGLE_REDIRECT_URI}`);
+
         if (error) {
-          logStep(`Authentication error received: ${error}`);
           setStatus("error");
-          setErrorDetails(`Error: ${error}`);
+          const description = `Google sign-in failed: ${error}`;
+          setErrorDetails(description);
+          logStep(description);
           toast({
             title: "Σφάλμα σύνδεσης",
-            description: `Η σύνδεση με το Google απέτυχε: ${error}`,
+            description,
             variant: "destructive",
           });
-          
-          // If the error is redirect_uri_mismatch, provide more detailed information
-          if (error.includes("redirect_uri_mismatch") || urlParams.get("error_description")?.includes("redirect_uri_mismatch")) {
-            const detailedError = `Σφάλμα: redirect_uri_mismatch. Η διεύθυνση ανακατεύθυνσης που χρησιμοποιήθηκε (${window.location.origin}/oauth2callback) δεν έχει εγκριθεί στο Google Cloud Console.`;
-            setErrorDetails(detailedError);
-            logStep(detailedError);
+
+          if (error.includes("redirect_uri_mismatch")) {
+            const detailed = `⚠️ redirect_uri_mismatch: ${window.location.origin}/oauth2callback is not whitelisted in Google Cloud Console.`;
+            setErrorDetails(detailed);
+            logStep(detailed);
           }
-          
+
           safeNavigate("/", 5000);
           return;
         }
-        
+
         if (!code) {
-          logStep("No authentication code received");
           setStatus("error");
-          setErrorDetails("No authentication code received");
+          setErrorDetails("No authentication code received.");
           toast({
             title: "Σφάλμα σύνδεσης",
-            description: "Δεν ελήφθη κωδικός πιστοποίησης.",
+            description: "Δεν ελήφθη κωδικός.",
             variant: "destructive",
           });
           safeNavigate("/", 3000);
           return;
         }
-        
-        // Exchange the code for tokens
-        logStep("Attempting to exchange code for tokens...");
+
+        logStep("Exchanging code for tokens...");
         const tokens = await exchangeCodeForTokens(code);
-        logStep(`Token exchange result: ${tokens ? "Successful" : "Failed"}`);
-        
-        if (!tokens) {
-          logStep("Failed to exchange code for tokens");
+        logStep(`Token exchange: ${tokens ? "✔️ success" : "❌ failed"}`);
+
+        if (!tokens || !tokens.access_token || !tokens.refresh_token) {
           setStatus("error");
-          setErrorDetails("Failed to exchange code for tokens");
+          setErrorDetails("Failed to exchange code for valid tokens.");
           toast({
-            title: "Σφάλμα σύνδεσης",
-            description: "Δεν ήταν δυνατή η ανταλλαγή του κωδικού για tokens.",
+            title: "Αποτυχία",
+            description: "Η ανταλλαγή token απέτυχε.",
             variant: "destructive",
           });
           safeNavigate("/", 3000);
           return;
         }
-        
-        // Store the tokens with additional validation
-        logStep("Validating tokens before storing");
-        if (tokens?.access_token && tokens?.refresh_token) {
-          logStep("Tokens validated, storing tokens");
-          storeTokens(tokens);
-        } else {
-          logStep("Invalid tokens received, missing access_token or refresh_token");
-          setStatus("error");
-          setErrorDetails("Invalid tokens received from authentication server");
-          toast({
-            title: "Σφάλμα σύνδεσης",
-            description: "Ελήφθησαν μη έγκυρα διακριτικά πρόσβασης.",
-            variant: "destructive",
-          });
-          safeNavigate("/", 3000);
-          return;
-        }
-        
-        // Fetch user info from Google API
+
+        logStep("Storing tokens...");
+        storeTokens(tokens);
+
+        // Fetch user info
         try {
-          logStep("Fetching user info with access token");
-          const userInfoResponse = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
-            headers: {
-              Authorization: `Bearer ${tokens.access_token}`,
-            },
+          logStep("Fetching user info...");
+          const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+            headers: { Authorization: `Bearer ${tokens.access_token}` },
           });
-          
-          logStep(`User info response status: ${userInfoResponse.status}`);
-          
-          if (userInfoResponse.ok) {
-            const userInfo = await userInfoResponse.json();
-            logStep(`User Info received for: ${userInfo.email}`);
-            
-            // Store user info in localStorage
+
+          if (userInfoRes.ok) {
+            const userInfo = await userInfoRes.json();
+            logStep(`User info: ${userInfo.email}`);
             localStorage.setItem("google_user", JSON.stringify(userInfo));
-            // Also store in the "user" key for compatibility with other components
             localStorage.setItem("user", JSON.stringify(userInfo));
           } else {
-            const responseText = await userInfoResponse.text();
-            logStep(`Failed to fetch user info: ${responseText}`);
-            logStep(`Status: ${userInfoResponse.status}, StatusText: ${userInfoResponse.statusText}`);
+            logStep(`User info failed: ${userInfoRes.status}`);
           }
-        } catch (error) {
-          logStep(`Error fetching user info: ${error instanceof Error ? error.message : String(error)}`);
-          // Continue with the flow even if user info fetch fails
+        } catch (err) {
+          logStep(`Error fetching user info: ${String(err)}`);
         }
-        
-        // Signal success
+
         setStatus("success");
-        logStep("Authentication successful");
+        logStep("✅ Auth complete. Redirecting...");
         toast({
-          title: "Επιτυχής σύνδεση",
-          description: "Συνδεθήκατε επιτυχώς στο Google.",
+          title: "Επιτυχία",
+          description: "Συνδεθήκατε επιτυχώς!",
         });
-        
-        // Redirect to home page with safe navigation
-        logStep("Redirecting to home page");
+
         safeNavigate("/home", 1500);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        logStep(`Error processing OAuth callback: ${errorMessage}`);
-        setErrorDetails(errorMessage);
+        const msg = error instanceof Error ? error.message : String(error);
+        logStep(`Exception in OAuth flow: ${msg}`);
+        setErrorDetails(msg);
         setStatus("error");
         toast({
           title: "Σφάλμα σύνδεσης",
-          description: "Προέκυψε σφάλμα κατά την επεξεργασία της απάντησης σύνδεσης.",
+          description: "Η πιστοποίηση απέτυχε.",
           variant: "destructive",
         });
         safeNavigate("/", 3000);
       }
     };
-    
+
     processAuthCode();
   }, [navigate, toast, location.pathname]);
 
   return {
     status,
     errorDetails,
-    processingSteps
+    processingSteps,
   };
 }
