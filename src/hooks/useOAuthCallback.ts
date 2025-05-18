@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { exchangeCodeForTokens, storeTokens } from "@/services/google";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,7 @@ export function useOAuthCallback() {
   const [status, setStatus] = useState<OAuthStatus>("loading");
   const [errorDetails, setErrorDetails] = useState<string>("");
   const [processingSteps, setProcessingSteps] = useState<string[]>([]);
+  const hasProcessed = useRef(false);
   
   // Log processing steps with timestamps
   const logStep = (step: string) => {
@@ -34,15 +35,13 @@ export function useOAuthCallback() {
   };
   
   useEffect(() => {
-    let hasProcessed = false;
-    
     const processAuthCode = async () => {
-      if (hasProcessed) {
+      if (hasProcessed.current) {
         logStep("Skipping duplicate processing attempt");
         return;
       }
       
-      hasProcessed = true;
+      hasProcessed.current = true;
       
       try {
         logStep("OAuth callback page loaded");
@@ -111,9 +110,23 @@ export function useOAuthCallback() {
           return;
         }
         
-        // Store the tokens
-        logStep("Storing tokens");
-        storeTokens(tokens);
+        // Store the tokens with additional validation
+        logStep("Validating tokens before storing");
+        if (tokens?.access_token && tokens?.refresh_token) {
+          logStep("Tokens validated, storing tokens");
+          storeTokens(tokens);
+        } else {
+          logStep("Invalid tokens received, missing access_token or refresh_token");
+          setStatus("error");
+          setErrorDetails("Invalid tokens received from authentication server");
+          toast({
+            title: "Σφάλμα σύνδεσης",
+            description: "Ελήφθησαν μη έγκυρα διακριτικά πρόσβασης.",
+            variant: "destructive",
+          });
+          safeNavigate("/", 3000);
+          return;
+        }
         
         // Fetch user info from Google API
         try {
