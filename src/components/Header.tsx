@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useSupabaseAuth } from "@/contexts/supabase/SupabaseAuthContext";
 import { useDevMode } from "@/contexts/DevModeContext";
@@ -5,9 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem } from "@/components/ui/navigation-menu";
-import { LogOut, Settings, HelpCircle, Home, Upload, ToggleLeft, ToggleRight } from "lucide-react";
+import { LogOut, Settings, HelpCircle, Home, Upload, ToggleLeft, ToggleRight, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, UserInfo } from "@/utils/userUtils";
+import { getStoredTokens, clearTokens } from "@/services/google";
+import GoogleAuthButton from "./GoogleAuthButton";
+
 const Header: React.FC = () => {
   const {
     isAuthenticated,
@@ -20,6 +24,8 @@ const Header: React.FC = () => {
   } = useDevMode();
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<UserInfo | null>(null);
+  const [hasGoogleAuth, setHasGoogleAuth] = useState<boolean>(false);
+  
   useEffect(() => {
     const fetchUser = async () => {
       const userInfo = await getCurrentUser();
@@ -29,11 +35,38 @@ const Header: React.FC = () => {
       fetchUser();
     }
   }, [isAuthenticated, user]);
+  
+  useEffect(() => {
+    // Check Google auth status
+    const checkGoogleAuth = () => {
+      const tokens = getStoredTokens();
+      setHasGoogleAuth(!!tokens?.access_token);
+    };
+    
+    checkGoogleAuth();
+    
+    // Setup listener for changes to localStorage
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'google_tokens') {
+        checkGoogleAuth();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+  
   const handleNavigate = (tab: string) => {
     navigate(`/?tab=${tab}`);
   };
+  
   const handleSettingsClick = () => {
     navigate('/?tab=settings');
+  };
+  
+  const handleGoogleSignOut = () => {
+    clearTokens();
+    setHasGoogleAuth(false);
   };
 
   // Use either the currentUser or create a basic user object if not available
@@ -42,14 +75,18 @@ const Header: React.FC = () => {
     email: user?.email || "user@example.com",
     name: "User"
   };
+  
   return <header className="bg-white shadow-sm border-b px-6 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3 mx-0 px-[5px]">
           <img src="/lovable-uploads/71c1dde9-c19a-4c28-8ac8-fb92c644916c.png" alt="Factura Automations Logo" className="h-12 w-auto object-contain" />
           
-          
           {isDevMode && <span className="text-xs bg-amber-100 text-amber-800 py-1 rounded-full mx-0 px-[9px]">
               Dev Mode
+            </span>}
+            
+          {hasGoogleAuth && <span className="text-xs bg-green-100 text-green-800 py-1 rounded-full mx-0 px-[9px]">
+              Google Connected
             </span>}
         </div>
 
@@ -65,8 +102,8 @@ const Header: React.FC = () => {
                 <NavigationMenuList>
                   <NavigationMenuItem>
                     <Button variant="ghost" size="sm" className="text-gray-600 hover:text-brand-blue" onClick={() => handleNavigate('emails')}>
-                      <Home className="h-4 w-4 mr-2" />
-                      Αρχική
+                      <Mail className="h-4 w-4 mr-2" />
+                      Emails
                     </Button>
                   </NavigationMenuItem>
                   <NavigationMenuItem>
@@ -77,6 +114,10 @@ const Header: React.FC = () => {
                   </NavigationMenuItem>
                 </NavigationMenuList>
               </NavigationMenu>
+              
+              {!hasGoogleAuth && 
+                <GoogleAuthButton className="text-brand-blue border-brand-blue" />
+              }
               
               <Button variant="outline" size="sm" className="text-brand-blue">
                 <HelpCircle className="h-4 w-4 mr-2" />
@@ -100,6 +141,14 @@ const Header: React.FC = () => {
                     <Settings className="h-4 w-4 mr-2" />
                     <span>Ρυθμίσεις</span>
                   </DropdownMenuItem>
+                  
+                  {hasGoogleAuth && (
+                    <DropdownMenuItem onClick={handleGoogleSignOut} className="cursor-pointer">
+                      <LogOut className="h-4 w-4 mr-2" />
+                      <span>Αποσύνδεση από Google</span>
+                    </DropdownMenuItem>
+                  )}
+                  
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => signOut()} className="text-red-500 cursor-pointer">
                     <LogOut className="h-4 w-4 mr-2" />

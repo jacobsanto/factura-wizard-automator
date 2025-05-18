@@ -1,66 +1,93 @@
 
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Upload } from "lucide-react";
-import AdvancedUploadForm from "@/components/uploads/AdvancedUploadForm";
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import SimpleUploadForm from "@/components/uploads/SimpleUploadForm";
-import RecentUploads from "@/components/uploads/RecentUploads";
+import AdvancedUploadForm from "@/components/uploads/AdvancedUploadForm";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import FormContainer from "@/components/uploads/FormContainer";
+import AuthAlert from "@/components/uploads/AuthAlert";
+import ErrorAlert from "@/components/uploads/ErrorAlert";
+import { getStoredTokens } from "@/services/google";
+import GoogleAuthButton from "@/components/GoogleAuthButton";
+import { EnhancedDriveService } from "@/services/drive";
 
 const DashboardUploadSection: React.FC = () => {
+  const [isGoogleAuthenticated, setIsGoogleAuthenticated] = useState<boolean | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [uploadType, setUploadType] = useState<"simple" | "advanced">("simple");
+
+  useEffect(() => {
+    const checkGoogleAuth = async () => {
+      try {
+        // Check if we have valid Google tokens
+        const hasTokens = !!getStoredTokens()?.access_token;
+        
+        if (!hasTokens) {
+          setIsGoogleAuthenticated(false);
+          return;
+        }
+        
+        // Check if Drive service is ready
+        const driveService = EnhancedDriveService.getInstance();
+        const isDriveInitialized = await driveService.initialize();
+        
+        setIsGoogleAuthenticated(isDriveInitialized);
+      } catch (error) {
+        console.error("Error checking Google auth status:", error);
+        setError("Σφάλμα κατά τον έλεγχο της σύνδεσης με το Google");
+        setIsGoogleAuthenticated(false);
+      }
+    };
+    
+    checkGoogleAuth();
+  }, []);
+
+  const handleClearError = () => {
+    setError(null);
+  };
+
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold">📤 Ανέβασμα Παραστατικού</h2>
+      <h2 className="text-xl font-semibold">Χειροκίνητο Ανέβασμα Παραστατικών</h2>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          <Tabs defaultValue="simple" className="w-full">
+      <ErrorAlert message={error} />
+      <AuthAlert isDriveAuthenticated={isGoogleAuthenticated} />
+      
+      {isGoogleAuthenticated === false && (
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-md mb-4">
+          <h3 className="text-lg font-medium text-blue-800 mb-2">Σύνδεση με Google Drive</h3>
+          <p className="text-blue-700 mb-3">
+            Για να ανεβάσετε αρχεία στο Google Drive, παρακαλώ συνδεθείτε με τον λογαριασμό σας Google.
+          </p>
+          <GoogleAuthButton className="bg-white hover:bg-gray-50" />
+        </div>
+      )}
+      
+      {isGoogleAuthenticated === true && (
+        <FormContainer>
+          <Tabs value={uploadType} onValueChange={(value) => setUploadType(value as "simple" | "advanced")}>
             <TabsList className="mb-4">
-              <TabsTrigger value="simple">Γρήγορο Ανέβασμα</TabsTrigger>
-              <TabsTrigger value="advanced">Προχωρημένο</TabsTrigger>
+              <TabsTrigger value="simple">Απλό ανέβασμα</TabsTrigger>
+              <TabsTrigger value="advanced">Προχωρημένο ανέβασμα</TabsTrigger>
             </TabsList>
             
             <TabsContent value="simple">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Αυτόματο Ανέβασμα με AI
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <p className="text-gray-600 text-sm">
-                      Ανεβάστε το PDF τιμολόγιο και η AI θα αναλύσει αυτόματα τα στοιχεία και θα το αποθηκεύσει στη σωστή θέση στο Drive.
-                    </p>
-                    
-                    <SimpleUploadForm />
-                  </div>
-                </CardContent>
-              </Card>
+              <SimpleUploadForm onError={setError} onSuccess={handleClearError} />
             </TabsContent>
             
             <TabsContent value="advanced">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Προχωρημένη Αποστολή</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 text-sm mb-4">
-                    Ανεβάστε το PDF τιμολογίό σας και πατήστε "Ανάλυση PDF" για αυτόματη εξαγωγή 
-                    των στοιχείων του τιμολογίου. Μπορείτε να επεξεργαστείτε τα δεδομένα πριν την αποστολή.
-                  </p>
-                  <AdvancedUploadForm />
-                </CardContent>
-              </Card>
+              <AdvancedUploadForm onError={setError} onSuccess={handleClearError} />
             </TabsContent>
           </Tabs>
+        </FormContainer>
+      )}
+
+      {isGoogleAuthenticated === null && (
+        <div className="flex items-center justify-center p-8">
+          <div className="w-10 h-10 border-4 border-t-brand-blue border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+          <p className="ml-3 text-gray-600">Έλεγχος σύνδεσης...</p>
         </div>
-        
-        <div className="space-y-4">
-          <RecentUploads />
-        </div>
-      </div>
+      )}
     </div>
   );
 };

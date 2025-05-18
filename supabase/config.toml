@@ -1,1 +1,7 @@
+
+# This file controls the behavior of Supabase Edge Functions.
+
 project_id = "yjjfyjbgfvqcabgdncek"
+
+[functions.google-oauth]
+verify_jwt = true
