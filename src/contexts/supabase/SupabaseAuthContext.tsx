@@ -1,8 +1,10 @@
+
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
 import { toast } from '@/hooks/use-toast';
 import { storeTokens } from '@/services/googleAuth/storage';
+import { GOOGLE_REDIRECT_URI } from '@/env';
 
 interface SupabaseAuthContextProps {
   session: Session | null;
@@ -142,6 +144,8 @@ export const SupabaseAuthProvider = ({ children }: { children: React.ReactNode }
     setIsLoading(true);
     try {
       console.info("Starting Google sign-in flow...");
+      console.info("Using redirect URI:", GOOGLE_REDIRECT_URI);
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {

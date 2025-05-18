@@ -1,29 +1,17 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useSupabaseAuth } from "@/contexts/supabase/SupabaseAuthContext";
 import { useDebugMode } from "@/hooks/useDebugMode";
 import { AuthErrorMessage } from "@/components/login/AuthErrorMessage";
 import { DebugPanel } from "@/components/login/DebugPanel";
 import { DevModeToggle } from "@/components/login/DevModeToggle";
+import { useLoginHandler } from "@/hooks/useLoginHandler";
 
 const Login: React.FC = () => {
-  const { isLoading, signInWithGoogle } = useSupabaseAuth();
+  const { isLoading, authError, handleSignIn, testGoogleConnection } = useLoginHandler();
   const { showDebug, handleClearLocalStorage } = useDebugMode();
   
-  const [authError, setAuthError] = useState<string | null>(null);
-
-  const handleGoogleSignIn = async () => {
-    setAuthError(null);
-    try {
-      await signInWithGoogle();
-    } catch (error) {
-      console.error("Google login error:", error);
-      setAuthError("Προέκυψε σφάλμα κατά τη σύνδεση με Google. Παρακαλώ δοκιμάστε ξανά.");
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md shadow-lg">
@@ -47,7 +35,7 @@ const Login: React.FC = () => {
           {/* Google Sign In Button with enhanced description */}
           <div className="my-6">
             <Button 
-              onClick={handleGoogleSignIn} 
+              onClick={handleSignIn} 
               className="w-full flex items-center justify-center gap-1 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 py-6"
               disabled={isLoading}
               type="button"
@@ -70,6 +58,17 @@ const Login: React.FC = () => {
               </span>
             </Button>
           </div>
+          
+          {/* Test connection button (only in debug mode) */}
+          {showDebug && (
+            <Button
+              onClick={testGoogleConnection}
+              className="w-full bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-300"
+              type="button"
+            >
+              Test Google Connection
+            </Button>
+          )}
           
           {/* DevMode Toggle */}
           <DevModeToggle />
