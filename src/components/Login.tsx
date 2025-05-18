@@ -24,7 +24,7 @@ const Login: React.FC = () => {
       {/* Background image with opacity */}
       <div style={{
       backgroundImage: `url('/lovable-uploads/374fd195-a90b-4dc1-ab99-5df46f383f45.png')`,
-      opacity: '0.35'
+      opacity: '0.25'
     }} className="absolute inset-0 bg-cover bg-center z-0 opacity-35 "></div>
       
       {/* Content with relative z-index to appear above the background */}
