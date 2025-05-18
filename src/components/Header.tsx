@@ -48,7 +48,7 @@ const Header: React.FC = () => {
           <img src="/lovable-uploads/eb8a966b-e206-44a4-9398-d5f242f5e9f4.png" alt="Arivia Group Logo" className="h-8 w-auto" />
           <h1 className="text-right text-sky-950 font-semibold text-xl px-0 mx-[50px]">FACTURA</h1>
           
-          {isDevMode && <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">
+          {isDevMode && <span className="text-xs bg-amber-100 text-amber-800 py-1 rounded-full mx-0 px-[9px]">
               Dev Mode
             </span>}
         </div>
