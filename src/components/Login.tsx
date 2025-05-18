@@ -62,6 +62,18 @@ const Login: React.FC = () => {
               <span className="ml-2 text-base font-medium">{isLoading ? 'Σύνδεση με Google...' : 'Σύνδεση με Google'}</span>
             </Button>
           </div>
+          
+          {/* Development Mode Tip */}
+          <div className="mt-4 text-sm text-gray-500 border border-amber-200 bg-amber-50 p-3 rounded-md">
+            <p className="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>
+                <strong className="font-medium">Tip για προγραμματιστές:</strong> Προσθέστε <code className="bg-white px-1 rounded border">?devMode=true</code> στο URL για ενεργοποίηση της λειτουργίας ανάπτυξης.
+              </span>
+            </p>
+          </div>
         </CardContent>
         
         <CardFooter className="flex flex-col space-y-4">
