@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
 import { toast } from '@/hooks/use-toast';
+import { storeTokens } from '@/services/googleAuth/storage';
 
 interface SupabaseAuthContextProps {
   session: Session | null;
@@ -27,10 +28,25 @@ export const SupabaseAuthProvider = ({ children }: { children: React.ReactNode }
 
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
+      async (event, currentSession) => {
         console.info(`SupabaseAuthProvider: Auth state changed: ${event}`);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
+        
+        // If this is a sign in with OAuth provider, check for Google tokens
+        if (event === 'SIGNED_IN' && currentSession?.provider_token && currentSession.provider_refresh_token) {
+          if (currentSession.provider_token && currentSession.provider_refresh_token) {
+            console.log("SupabaseAuthProvider: Found OAuth tokens, storing for Google services");
+            
+            // Store the OAuth tokens for Google services
+            await storeTokens({
+              access_token: currentSession.provider_token,
+              refresh_token: currentSession.provider_refresh_token,
+              expiry_date: Date.now() + 3600 * 1000, // Default to 1 hour
+              token_type: "Bearer"
+            });
+          }
+        }
         
         if (event === 'SIGNED_IN') {
           toast({
@@ -116,6 +132,7 @@ export const SupabaseAuthProvider = ({ children }: { children: React.ReactNode }
         provider: 'google',
         options: {
           redirectTo: window.location.origin,
+          scopes: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets profile email',
         }
       });
       

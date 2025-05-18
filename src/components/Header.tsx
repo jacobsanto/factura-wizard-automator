@@ -10,7 +10,6 @@ import { LogOut, Settings, HelpCircle, Home, Upload, ToggleLeft, ToggleRight, Ma
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, UserInfo } from "@/utils/userUtils";
 import { getStoredTokens, clearTokens } from "@/services/google";
-import GoogleAuthButton from "./GoogleAuthButton";
 
 const Header: React.FC = () => {
   const {
@@ -114,10 +113,6 @@ const Header: React.FC = () => {
                   </NavigationMenuItem>
                 </NavigationMenuList>
               </NavigationMenu>
-              
-              {!hasGoogleAuth && 
-                <GoogleAuthButton className="text-brand-blue border-brand-blue" />
-              }
               
               <Button variant="outline" size="sm" className="text-brand-blue">
                 <HelpCircle className="h-4 w-4 mr-2" />

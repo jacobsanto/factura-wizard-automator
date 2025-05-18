@@ -1,15 +1,15 @@
 
 import { useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import { getGoogleAuthUrl } from "@/services/google";
 import { useToast } from "@/hooks/use-toast";
-import { GOOGLE_REDIRECT_URI } from "@/env";
+import { useSupabaseAuth } from "@/contexts/supabase/SupabaseAuthContext";
 
 export function useLoginHandler() {
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const location = useLocation();
   const { toast } = useToast();
+  const { signInWithGoogle } = useSupabaseAuth();
   
   const logStep = useCallback((step: string) => {
     console.log(`Login: ${step}`);
@@ -33,43 +33,15 @@ export function useLoginHandler() {
     setAuthError(null);
     
     try {
-      logStep("Initiating Google sign-in flow...");
-      logStep(`Browser user agent: ${navigator.userAgent}`);
-      
-      // Get the Google Auth URL
-      const authUrl = getGoogleAuthUrl();
-      logStep("Generated auth URL, preparing to redirect...");
-      logStep(`Redirect URI being used: ${GOOGLE_REDIRECT_URI}`);
-      
-      // Add a short delay before redirecting to ensure logs are visible
-      // and to avoid potential rapid navigation issues
-      setTimeout(() => {
-        try {
-          logStep(`Redirecting to Google at ${new Date().toISOString()}`);
-          window.location.href = authUrl;
-        } catch (redirectError) {
-          const errorMessage = redirectError instanceof Error 
-            ? redirectError.message 
-            : String(redirectError);
-            
-          logStep(`Error during redirect: ${errorMessage}`);
-          setAuthError(`Redirect error: ${errorMessage}`);
-          setIsLoading(false);
-          
-          toast({
-            variant: "destructive",
-            title: "Σφάλμα",
-            description: "Προέκυψε σφάλμα κατά την ανακατεύθυνση. Παρακαλώ δοκιμάστε ξανά."
-          });
-        }
-      }, 1000);
+      logStep("Initiating Google sign-in flow with Supabase...");
+      signInWithGoogle().finally(() => setIsLoading(false));
     } catch (error) {
       const errorMessage = error instanceof Error 
         ? error.message 
         : String(error);
         
-      logStep(`Error generating Google auth URL: ${errorMessage}`);
-      setAuthError(`URL generation error: ${errorMessage}`);
+      logStep(`Error during sign-in: ${errorMessage}`);
+      setAuthError(`Sign-in error: ${errorMessage}`);
       setIsLoading(false);
       
       toast({
@@ -78,7 +50,7 @@ export function useLoginHandler() {
         description: "Προέκυψε σφάλμα κατά τη σύνδεση. Παρακαλώ δοκιμάστε ξανά."
       });
     }
-  }, [location.pathname, toast, logStep]);
+  }, [location.pathname, toast, logStep, signInWithGoogle]);
   
   const testGoogleConnection = useCallback(() => {
     setAuthError(null);
