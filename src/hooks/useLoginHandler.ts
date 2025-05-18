@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { getGoogleAuthUrl } from "@/services/google";
 import { useToast } from "@/hooks/use-toast";
@@ -11,10 +11,15 @@ export function useLoginHandler() {
   const location = useLocation();
   const { toast } = useToast();
   
-  const handleSignIn = () => {
+  const logStep = useCallback((step: string) => {
+    console.log(`Login: ${step}`);
+    return step;
+  }, []);
+
+  const handleSignIn = useCallback(() => {
     // Only proceed if we're not coming from the oauth callback
     if (location.pathname === "/oauth2callback") {
-      console.log("Login: Preventing sign-in redirect loop from OAuth callback");
+      logStep("Preventing sign-in redirect loop from OAuth callback");
       toast({
         variant: "destructive",
         title: "Προσοχή",
@@ -24,28 +29,33 @@ export function useLoginHandler() {
     }
     
     setIsLoading(true);
-    console.log("Sign in button clicked at", new Date().toISOString());
+    logStep(`Sign in button clicked at ${new Date().toISOString()}`);
     setAuthError(null);
     
     try {
-      console.log("Login: Initiating Google sign-in flow...");
-      console.log("Login: Browser user agent:", navigator.userAgent);
+      logStep("Initiating Google sign-in flow...");
+      logStep(`Browser user agent: ${navigator.userAgent}`);
       
       // Get the Google Auth URL
       const authUrl = getGoogleAuthUrl();
-      console.log("Login: Generated auth URL, preparing to redirect...");
-      console.log("Login: Redirect URI being used:", GOOGLE_REDIRECT_URI);
+      logStep("Generated auth URL, preparing to redirect...");
+      logStep(`Redirect URI being used: ${GOOGLE_REDIRECT_URI}`);
       
       // Add a short delay before redirecting to ensure logs are visible
       // and to avoid potential rapid navigation issues
       setTimeout(() => {
         try {
-          console.log("Login: Redirecting to Google at", new Date().toISOString());
+          logStep(`Redirecting to Google at ${new Date().toISOString()}`);
           window.location.href = authUrl;
         } catch (redirectError) {
-          console.error("Login: Error during redirect:", redirectError);
-          setAuthError(`Redirect error: ${redirectError instanceof Error ? redirectError.message : String(redirectError)}`);
+          const errorMessage = redirectError instanceof Error 
+            ? redirectError.message 
+            : String(redirectError);
+            
+          logStep(`Error during redirect: ${errorMessage}`);
+          setAuthError(`Redirect error: ${errorMessage}`);
           setIsLoading(false);
+          
           toast({
             variant: "destructive",
             title: "Σφάλμα",
@@ -54,36 +64,42 @@ export function useLoginHandler() {
         }
       }, 1000);
     } catch (error) {
-      console.error("Login: Error generating Google auth URL:", error);
-      setAuthError(`URL generation error: ${error instanceof Error ? error.message : String(error)}`);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : String(error);
+        
+      logStep(`Error generating Google auth URL: ${errorMessage}`);
+      setAuthError(`URL generation error: ${errorMessage}`);
       setIsLoading(false);
+      
       toast({
         variant: "destructive",
         title: "Σφάλμα",
         description: "Προέκυψε σφάλμα κατά τη σύνδεση. Παρακαλώ δοκιμάστε ξανά."
       });
     }
-  };
+  }, [location.pathname, toast, logStep]);
   
-  const testGoogleConnection = () => {
+  const testGoogleConnection = useCallback(() => {
     setAuthError(null);
     const startTime = Date.now();
-    console.log("Testing connection to accounts.google.com...");
+    logStep("Testing connection to accounts.google.com...");
     
     // Create an image element to test if Google can be reached
     const img = new Image();
+    
     img.onload = () => {
       const duration = Date.now() - startTime;
-      console.log(`Connection to Google successful (${duration}ms)`);
+      logStep(`Connection to Google successful (${duration}ms)`);
       toast({
         title: "Επιτυχής Σύνδεση",
         description: `Η σύνδεση με το Google είναι εφικτή (${duration}ms).`
       });
     };
     
-    img.onerror = (error) => {
+    img.onerror = () => {
       const duration = Date.now() - startTime;
-      console.error(`Failed to connect to Google (${duration}ms)`, error);
+      logStep(`Failed to connect to Google (${duration}ms)`);
       setAuthError(`Failed to connect to Google after ${duration}ms`);
       toast({
         variant: "destructive",
@@ -93,8 +109,8 @@ export function useLoginHandler() {
     };
     
     // Use a Google favicon to test connection
-    img.src = "https://www.google.com/favicon.ico?" + new Date().getTime();
-  };
+    img.src = `https://www.google.com/favicon.ico?${new Date().getTime()}`;
+  }, [toast, logStep]);
 
   return {
     isLoading,
