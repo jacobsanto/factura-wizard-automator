@@ -6,7 +6,6 @@ import { useSupabaseAuth } from "@/contexts/supabase/SupabaseAuthContext";
 import { useDebugMode } from "@/hooks/useDebugMode";
 import { AuthErrorMessage } from "@/components/login/AuthErrorMessage";
 import { DebugPanel } from "@/components/login/DebugPanel";
-import { DevModeToggle } from "@/components/DevModeToggle";
 
 const Login: React.FC = () => {
   const { isLoading, signInWithGoogle } = useSupabaseAuth();
@@ -62,11 +61,6 @@ const Login: React.FC = () => {
               </svg>
               <span className="ml-2 text-base font-medium">{isLoading ? 'Σύνδεση με Google...' : 'Σύνδεση με Google'}</span>
             </Button>
-          </div>
-          
-          {/* DevMode Toggle - Added here so it's accessible from the login screen */}
-          <div className="mt-4 flex justify-center">
-            <DevModeToggle />
           </div>
         </CardContent>
         
