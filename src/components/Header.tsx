@@ -44,7 +44,7 @@ const Header: React.FC = () => {
   };
   return <header className="bg-white shadow-sm border-b px-6 py-3">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3 px-[69px] mx-0">
           <img src="/lovable-uploads/eb8a966b-e206-44a4-9398-d5f242f5e9f4.png" alt="Arivia Group Logo" className="h-8 w-auto" />
           <h1 className="text-right text-sky-950 font-semibold text-xl">FACTURA</h1>
           
