@@ -3,7 +3,7 @@ import React, { FormEvent, ReactNode } from "react";
 
 interface FormContainerProps {
   children: ReactNode;
-  onSubmit: (e: FormEvent) => Promise<void>;
+  onSubmit: (e: FormEvent) => Promise<void> | void;
   className?: string;
 }
 

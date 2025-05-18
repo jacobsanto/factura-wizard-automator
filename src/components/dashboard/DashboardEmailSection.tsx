@@ -75,7 +75,7 @@ const DashboardEmailSection: React.FC<DashboardEmailSectionProps> = ({
       )}
       
       {!hasGoogleAuth && (
-        <Alert variant="warning" className="bg-amber-50 border-amber-200 text-amber-800">
+        <Alert variant="default" className="bg-amber-50 border-amber-200 text-amber-800">
           <AlertTitle>Απαιτείται σύνδεση με Google</AlertTitle>
           <AlertDescription className="flex flex-col gap-2">
             <p>Για να δείτε τα emails σας με παραστατικά, παρακαλώ συνδεθείτε με το Google.</p>

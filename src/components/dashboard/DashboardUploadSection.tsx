@@ -46,6 +46,13 @@ const DashboardUploadSection: React.FC = () => {
     setError(null);
   };
 
+  // Dummy submit handler for FormContainer
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // This is a placeholder function to satisfy the type requirements
+    // The actual submission is handled by the SimpleUploadForm or AdvancedUploadForm components
+  };
+
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">Χειροκίνητο Ανέβασμα Παραστατικών</h2>
@@ -64,7 +71,7 @@ const DashboardUploadSection: React.FC = () => {
       )}
       
       {isGoogleAuthenticated === true && (
-        <FormContainer>
+        <FormContainer onSubmit={handleFormSubmit}>
           <Tabs value={uploadType} onValueChange={(value) => setUploadType(value as "simple" | "advanced")}>
             <TabsList className="mb-4">
               <TabsTrigger value="simple">Απλό ανέβασμα</TabsTrigger>
@@ -72,11 +79,11 @@ const DashboardUploadSection: React.FC = () => {
             </TabsList>
             
             <TabsContent value="simple">
-              <SimpleUploadForm onError={setError} onSuccess={handleClearError} />
+              <SimpleUploadForm />
             </TabsContent>
             
             <TabsContent value="advanced">
-              <AdvancedUploadForm onError={setError} onSuccess={handleClearError} />
+              <AdvancedUploadForm />
             </TabsContent>
           </Tabs>
         </FormContainer>
