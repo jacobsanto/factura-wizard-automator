@@ -138,8 +138,8 @@ const SimpleUploadForm: React.FC = () => {
       }, 500);
       
       // First extract if not already done
-      let extractedData;
-      if (!this.extractedData) {
+      let dataToUpload;
+      if (!extractedData) {
         setIsExtracting(true);
         toast({
           title: "Επεξεργασία",
@@ -147,8 +147,8 @@ const SimpleUploadForm: React.FC = () => {
         });
         
         try {
-          extractedData = await extractInvoiceDataFromPdf(file);
-          setExtractedData(extractedData);
+          dataToUpload = await extractInvoiceDataFromPdf(file);
+          setExtractedData(dataToUpload);
         } catch (error) {
           console.error("PDF extraction error during upload:", error);
           throw new Error("Αποτυχία ανάλυσης του PDF");
@@ -156,7 +156,7 @@ const SimpleUploadForm: React.FC = () => {
           setIsExtracting(false);
         }
       } else {
-        extractedData = this.extractedData;
+        dataToUpload = extractedData;
       }
       
       // Upload to Drive
@@ -166,12 +166,12 @@ const SimpleUploadForm: React.FC = () => {
       });
       
       const result = await uploadInvoiceToDrive(file, {
-        ...extractedData,
+        ...dataToUpload,
         // Convert string amount to number
-        amount: typeof extractedData.amount === 'string' 
-          ? parseFloat(extractedData.amount) 
-          : extractedData.amount,
-        supplier: extractedData.issuer,
+        amount: typeof dataToUpload.amount === 'string' 
+          ? parseFloat(dataToUpload.amount) 
+          : dataToUpload.amount,
+        supplier: dataToUpload.issuer,
       });
       
       clearInterval(progressInterval);
