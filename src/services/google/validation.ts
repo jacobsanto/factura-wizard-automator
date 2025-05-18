@@ -167,3 +167,16 @@ export const forceResetAuthState = (): void => {
   localStorage.removeItem("user");
   window.location.reload();
 };
+
+/**
+ * Completely clear all authentication data
+ * This function can be called directly to force a complete logout
+ */
+export const clearAllAuthData = (): void => {
+  console.log("Auth validation: Clearing all authentication data");
+  localStorage.removeItem("google_tokens");
+  localStorage.removeItem("google_user");
+  localStorage.removeItem("user");
+  // Clear any other auth-related data
+  console.log("Auth validation: All authentication data cleared");
+};
