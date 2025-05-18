@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +7,7 @@ import { AuthErrorMessage } from "@/components/login/AuthErrorMessage";
 import { DebugPanel } from "@/components/login/DebugPanel";
 import { DevModeToggle } from "@/components/login/DevModeToggle";
 import { useLoginHandler } from "@/hooks/useLoginHandler";
+
 const Login: React.FC = () => {
   const {
     isLoading,
@@ -17,12 +19,13 @@ const Login: React.FC = () => {
     showDebug,
     handleClearLocalStorage
   } = useDebugMode();
+  
   return <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
       {/* Background image with opacity */}
       <div style={{
       backgroundImage: `url('/lovable-uploads/374fd195-a90b-4dc1-ab99-5df46f383f45.png')`,
-      opacity: '0.85'
-    }} className="absolute inset-0 bg-cover bg-center z-0 opacity-65 "></div>
+      opacity: '0.35'
+    }} className="absolute inset-0 bg-cover bg-center z-0 opacity-35 "></div>
       
       {/* Content with relative z-index to appear above the background */}
       <Card className="w-full max-w-md shadow-lg z-10 bg-white/95">
@@ -91,4 +94,5 @@ const Login: React.FC = () => {
       </Card>
     </div>;
 };
+
 export default Login;
