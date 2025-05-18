@@ -1,6 +1,25 @@
 
-import { SupabaseAuthProvider, useSupabaseAuth } from '../supabase/SupabaseAuthContext';
+import { useContext } from 'react';
+import { AuthContext } from './AuthProvider';
 
-// Re-export the SupabaseAuth provider and hook as our main auth system
-export const AuthProvider = SupabaseAuthProvider;
-export const useAuth = useSupabaseAuth;
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+
+  const { user, isLoading, isAuthenticated } = context.state;
+  const { signIn, signUp, signOut, signInWithGoogle } = context.actions;
+
+  return {
+    user,
+    isLoading,
+    isAuthenticated,
+    signIn,
+    signUp,
+    signOut,
+    signInWithGoogle
+  };
+};
+
+export { AuthProvider } from './AuthProvider';

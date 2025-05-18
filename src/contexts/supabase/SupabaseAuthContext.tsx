@@ -12,6 +12,7 @@ interface SupabaseAuthContextProps {
   signIn: (email: string, password: string) => Promise<{ error: any | null }>;
   signUp: (email: string, password: string) => Promise<{ error: any | null }>;
   signOut: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
 }
 
 const SupabaseAuthContext = createContext<SupabaseAuthContextProps | undefined>(undefined);
@@ -107,6 +108,37 @@ export const SupabaseAuthProvider = ({ children }: { children: React.ReactNode }
     }
   };
   
+  const signInWithGoogle = async () => {
+    setIsLoading(true);
+    try {
+      console.info("Starting Google sign-in flow...");
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        }
+      });
+      
+      if (error) {
+        console.error("Google sign-in error:", error);
+        toast({
+          title: "Σφάλμα σύνδεσης με Google",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Google sign-in exception:", error);
+      toast({
+        title: "Σφάλμα σύνδεσης με Google",
+        description: "Προέκυψε απρόσμενο σφάλμα κατά τη σύνδεση με Google.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -129,6 +161,7 @@ export const SupabaseAuthProvider = ({ children }: { children: React.ReactNode }
     signIn,
     signUp,
     signOut,
+    signInWithGoogle,
   };
 
   return (
