@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { useSupabaseAuth } from "@/contexts/supabase/SupabaseAuthContext";
+import { useDevMode } from "@/contexts/DevModeContext";
 import Header from "@/components/Header";
 import Login from "@/components/Login";
 import Dashboard from "@/components/Dashboard";
@@ -11,6 +12,7 @@ import { toast } from "@/components/ui/use-toast";
 
 const AppContent: React.FC = () => {
   const { isAuthenticated, isLoading } = useSupabaseAuth();
+  const { isDevMode } = useDevMode();
   const [showHelp, setShowHelp] = useState(false);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [supabaseConnected, setSupabaseConnected] = useState<boolean | null>(null);
@@ -76,6 +78,7 @@ const AppContent: React.FC = () => {
           <li>Has User Info: {localStorage.getItem("user") ? "Yes" : "No"}</li>
           <li>Loading State: {isLoading ? "Loading" : "Not Loading"}</li>
           <li>Auth State: {isAuthenticated ? "Authenticated" : "Not Authenticated"}</li>
+          <li>Dev Mode: {isDevMode ? "Enabled" : "Disabled"}</li>
           <li>Supabase Connected: {supabaseConnected === null ? "Checking..." : supabaseConnected ? "Yes" : "No"}</li>
         </ul>
       </div>
@@ -129,9 +132,12 @@ const AppContent: React.FC = () => {
     );
   }
 
+  // Check if dev mode is enabled OR user is authenticated
+  const showMainApp = isDevMode || isAuthenticated;
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      {isAuthenticated ? (
+      {showMainApp ? (
         <>
           <Header />
           <main className="flex-grow">
@@ -139,6 +145,12 @@ const AppContent: React.FC = () => {
           </main>
           <footer className="py-4 px-6 border-t text-center text-sm text-gray-500">
             © {new Date().getFullYear()} Αριβία Γκρουπ - Αυτοματισμός Παραστατικών
+            {isDevMode && (
+              <span className="ml-2 inline-flex items-center">
+                <span className="h-2 w-2 rounded-full mr-1 bg-amber-500"></span>
+                Development Mode
+              </span>
+            )}
             {supabaseConnected !== null && (
               <span className="ml-2 inline-flex items-center">
                 <span className={`h-2 w-2 rounded-full mr-1 ${supabaseConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>

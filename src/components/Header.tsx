@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useSupabaseAuth } from "@/contexts/supabase/SupabaseAuthContext";
+import { useDevMode } from "@/contexts/DevModeContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
@@ -15,12 +16,13 @@ import {
   NavigationMenuList,
   NavigationMenuItem
 } from "@/components/ui/navigation-menu";
-import { LogOut, Settings, HelpCircle, Home, Upload } from "lucide-react";
+import { LogOut, Settings, HelpCircle, Home, Upload, ToggleLeft, ToggleRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, UserInfo } from "@/utils/userUtils";
 
 const Header: React.FC = () => {
   const { isAuthenticated, user, signOut } = useSupabaseAuth();
+  const { isDevMode, toggleDevMode } = useDevMode();
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<UserInfo | null>(null);
   
@@ -62,10 +64,31 @@ const Header: React.FC = () => {
           <h1 className="text-xl font-semibold text-gray-800">
             Αυτοματισμός Παραστατικών
           </h1>
+          
+          {isDevMode && (
+            <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">
+              Dev Mode
+            </span>
+          )}
         </div>
 
         <div className="flex items-center space-x-4">
-          {isAuthenticated && (
+          {/* Dev Mode Toggle - Always visible in header */}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className={isDevMode ? "text-amber-600 border-amber-300" : "text-gray-600"}
+            onClick={toggleDevMode}
+          >
+            {isDevMode ? (
+              <ToggleRight className="h-4 w-4 mr-2" />
+            ) : (
+              <ToggleLeft className="h-4 w-4 mr-2" />
+            )}
+            {isDevMode ? "Disable Dev Mode" : "Enable Dev Mode"}
+          </Button>
+
+          {(isAuthenticated || isDevMode) && (
             <>
               <NavigationMenu>
                 <NavigationMenuList>
