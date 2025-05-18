@@ -133,7 +133,9 @@ export const uploadInvoiceToDrive = async ({
   console.log("Created folder path, final folder ID:", parentId);
 
   // Step 3: Generate filename
+  // Fix: Include the required clientName parameter
   const filename = generateInvoiceFilename({
+    clientName,
     issuer,
     invoiceNumber,
     date,

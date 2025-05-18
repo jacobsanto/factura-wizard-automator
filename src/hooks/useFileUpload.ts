@@ -74,7 +74,9 @@ export function useFileUpload(): UseFileUploadReturn {
       // Process with GPT first
       console.log("Processing PDF with GPT...");
       try {
-        const extractedData = await extractInvoiceDataWithGpt(file);
+        // Fix: Pass the file blob instead of the File object
+        const pdfText = await extractTextFromPdf(file);
+        const extractedData = await extractInvoiceDataWithGpt(pdfText);
         console.log("GPT processing complete", extractedData);
         
         if (extractedData && extractedData.vatNumber !== "unknown") {
