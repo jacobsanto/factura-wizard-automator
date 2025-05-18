@@ -1,3 +1,4 @@
+
 export interface DocumentData {
   vatNumber: string;
   date: string;
@@ -59,4 +60,7 @@ export interface UserSettings {
   notifyEmail?: string;
   autoProcessingEnabled: boolean;
   processingInterval: number; // in minutes
+  enableAI?: boolean; // Whether to use AI for data extraction
+  preferGreekExtraction?: boolean; // Whether to optimize for Greek invoices
+  aiConfidenceThreshold?: number; // Minimum confidence level for AI extraction (0-100)
 }

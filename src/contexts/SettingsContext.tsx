@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { UserSettings } from "@/types";
 
@@ -14,6 +13,9 @@ const defaultSettings: UserSettings = {
   notifyEmail: "",
   autoProcessingEnabled: false,
   processingInterval: 30, // 30 minutes default
+  enableAI: true, // Enable AI extraction by default
+  preferGreekExtraction: true, // Optimize for Greek invoices by default
+  aiConfidenceThreshold: 70, // 70% confidence threshold by default
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
