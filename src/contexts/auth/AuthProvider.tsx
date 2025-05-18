@@ -5,15 +5,7 @@ import { AuthContextType } from "./types";
 import { useAuthInitialization } from "./useAuthInitialization";
 import { useAuthActions } from "./useAuthActions";
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-};
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { 
@@ -36,7 +28,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   });
   
   // Auth action handlers
-  const { signIn, signOut, refreshToken } = useAuthActions({
+  const { signIn, signOut, refreshToken, signUp, signInWithGoogle } = useAuthActions({
     isAuthenticated,
     setIsAuthenticated,
     setIsLoading,
@@ -51,7 +43,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       user,
       serviceStatus,
       signIn,
+      signUp,
       signOut,
+      signInWithGoogle,
       refreshToken
     }}>
       {children}

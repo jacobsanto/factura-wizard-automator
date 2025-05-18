@@ -6,8 +6,10 @@ export interface AuthContextType {
   isLoading: boolean;
   user: any | null;
   serviceStatus: GoogleServiceStatus;
-  signIn: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{error: any | null}>;
+  signUp: (email: string, password: string) => Promise<{error: any | null}>;
   signOut: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   refreshToken: () => Promise<void>;
 }
 

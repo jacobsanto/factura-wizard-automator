@@ -1,6 +1,6 @@
 
 import { useContext } from 'react';
-import { AuthContext } from './AuthProvider';
+import { AuthContext, AuthProvider } from './AuthProvider';
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -8,8 +8,16 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
 
-  const { user, isLoading, isAuthenticated } = context.state;
-  const { signIn, signUp, signOut, signInWithGoogle } = context.actions;
+  const { 
+    isAuthenticated, 
+    isLoading, 
+    user,
+    serviceStatus,
+    signIn, 
+    signUp, 
+    signOut,
+    signInWithGoogle 
+  } = context;
 
   return {
     user,
@@ -18,7 +26,8 @@ export const useAuth = () => {
     signIn,
     signUp,
     signOut,
-    signInWithGoogle
+    signInWithGoogle,
+    serviceStatus
   };
 };
 
