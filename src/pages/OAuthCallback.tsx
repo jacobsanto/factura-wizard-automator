@@ -1,12 +1,12 @@
-
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { exchangeCodeForTokens, storeTokens } from "@/services/google";
 import { useToast } from "@/hooks/use-toast";
 import { GOOGLE_REDIRECT_URI } from "@/env";
 
 const OAuthCallback: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorDetails, setErrorDetails] = useState<string>("");
@@ -18,6 +18,15 @@ const OAuthCallback: React.FC = () => {
     const logEntry = `${timestamp} - ${step}`;
     console.log(logEntry);
     setProcessingSteps(prev => [...prev, logEntry]);
+  };
+
+  const safeNavigate = (path: string, delay: number) => {
+    if (location.pathname === "/oauth2callback") {
+      logStep(`Safe navigation to ${path} with ${delay}ms delay`);
+      setTimeout(() => navigate(path), delay);
+    } else {
+      logStep(`Navigation skipped - already navigated away from OAuth callback`);
+    }
   };
   
   useEffect(() => {
@@ -54,7 +63,7 @@ const OAuthCallback: React.FC = () => {
             logStep(detailedError);
           }
           
-          setTimeout(() => navigate("/"), 5000);
+          safeNavigate("/", 5000);
           return;
         }
         
@@ -67,7 +76,7 @@ const OAuthCallback: React.FC = () => {
             description: "Δεν ελήφθη κωδικός πιστοποίησης.",
             variant: "destructive",
           });
-          setTimeout(() => navigate("/"), 3000);
+          safeNavigate("/", 3000);
           return;
         }
         
@@ -85,7 +94,7 @@ const OAuthCallback: React.FC = () => {
             description: "Δεν ήταν δυνατή η ανταλλαγή του κωδικού για tokens.",
             variant: "destructive",
           });
-          setTimeout(() => navigate("/"), 3000);
+          safeNavigate("/", 3000);
           return;
         }
         
@@ -130,9 +139,9 @@ const OAuthCallback: React.FC = () => {
           description: "Συνδεθήκατε επιτυχώς στο Google.",
         });
         
-        // Redirect to home page
+        // Redirect to home page with safe navigation
         logStep("Redirecting to home page");
-        setTimeout(() => navigate("/"), 1500);
+        safeNavigate("/home", 1500);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logStep(`Error processing OAuth callback: ${errorMessage}`);
@@ -143,12 +152,12 @@ const OAuthCallback: React.FC = () => {
           description: "Προέκυψε σφάλμα κατά την επεξεργασία της απάντησης σύνδεσης.",
           variant: "destructive",
         });
-        setTimeout(() => navigate("/"), 3000);
+        safeNavigate("/", 3000);
       }
     };
     
     processAuthCode();
-  }, [navigate, toast]);
+  }, [navigate, toast, location.pathname]);
   
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">

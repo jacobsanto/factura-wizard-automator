@@ -1,15 +1,16 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { getGoogleAuthUrl, checkAndFixAuthState } from "@/services/google";
+import { getGoogleAuthUrl, checkAndFixAuthState, forceResetAuthState } from "@/services/google";
 import { useToast } from "@/hooks/use-toast";
 import { GOOGLE_REDIRECT_URI } from "@/env";
+import { useLocation } from "react-router-dom";
 
 const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const location = useLocation();
   const {
     toast
   } = useToast();
@@ -57,6 +58,17 @@ const Login: React.FC = () => {
   }, []);
 
   const handleSignIn = () => {
+    // Only proceed if we're not coming from the oauth callback
+    if (location.pathname === "/oauth2callback") {
+      console.log("Login: Preventing sign-in redirect loop from OAuth callback");
+      toast({
+        variant: "destructive",
+        title: "Προσοχή",
+        description: "Αποτροπή βρόχου ανακατεύθυνσης. Παρακαλώ περιμένετε."
+      });
+      return;
+    }
+    
     setIsLoading(true);
     console.log("Sign in button clicked at", new Date().toISOString());
     setAuthError(null);
