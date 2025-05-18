@@ -58,3 +58,20 @@ export const getUserStorageKey = (baseKey: string): string => {
   }
   return `${baseKey}-${user.email}`;
 };
+
+/**
+ * Synchronous version of getCurrentUser that returns null if user isn't available in localStorage
+ * This should be used when you need a synchronous result and can't use async/await
+ */
+export const getCurrentUserSync = (): UserInfo | null => {
+  try {
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      return JSON.parse(userStr);
+    }
+    return null;
+  } catch (error) {
+    console.error("Error getting current user from localStorage:", error);
+    return null;
+  }
+};

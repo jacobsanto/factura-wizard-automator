@@ -3,7 +3,7 @@
  * Utilities for file and folder naming
  */
 import { DocumentData } from "@/types";
-import { getCurrentUser } from "@/utils/userUtils";
+import { getCurrentUser, getCurrentUserSync } from "@/utils/userUtils";
 
 /**
  * Clean and normalize Greek text
@@ -147,7 +147,8 @@ export function generateDrivePath({
   
   // If includeUserFolder is true, add the user folder
   if (includeUserFolder) {
-    const currentUser = getCurrentUser();
+    // Use the synchronous version to avoid async issues
+    const currentUser = getCurrentUserSync();
     if (currentUser && currentUser.email) {
       // Use email as folder name for unique identification
       pathSegments.push(sanitizeText(currentUser.email));

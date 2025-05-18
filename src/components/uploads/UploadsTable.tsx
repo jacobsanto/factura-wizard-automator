@@ -20,10 +20,14 @@ const UploadsTable: React.FC = () => {
 
   useEffect(() => {
     // Get current user and load logs on component mount
-    const user = getCurrentUser();
-    if (user) {
-      setUserEmail(user.email);
-    }
+    const fetchUser = async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        setUserEmail(user.email);
+      }
+    };
+    
+    fetchUser();
     loadLogs();
   }, []);
 
