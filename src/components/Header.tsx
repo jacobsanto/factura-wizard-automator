@@ -1,115 +1,76 @@
-
 import React, { useEffect, useState } from "react";
 import { useSupabaseAuth } from "@/contexts/supabase/SupabaseAuthContext";
 import { useDevMode } from "@/contexts/DevModeContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
-import { 
-  NavigationMenu,
-  NavigationMenuList,
-  NavigationMenuItem
-} from "@/components/ui/navigation-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { NavigationMenu, NavigationMenuList, NavigationMenuItem } from "@/components/ui/navigation-menu";
 import { LogOut, Settings, HelpCircle, Home, Upload, ToggleLeft, ToggleRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, UserInfo } from "@/utils/userUtils";
-
 const Header: React.FC = () => {
-  const { isAuthenticated, user, signOut } = useSupabaseAuth();
-  const { isDevMode, toggleDevMode } = useDevMode();
+  const {
+    isAuthenticated,
+    user,
+    signOut
+  } = useSupabaseAuth();
+  const {
+    isDevMode,
+    toggleDevMode
+  } = useDevMode();
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<UserInfo | null>(null);
-  
   useEffect(() => {
     const fetchUser = async () => {
       const userInfo = await getCurrentUser();
       setCurrentUser(userInfo);
     };
-    
     if (isAuthenticated) {
       fetchUser();
     }
   }, [isAuthenticated, user]);
-
   const handleNavigate = (tab: string) => {
     navigate(`/?tab=${tab}`);
   };
-
   const handleSettingsClick = () => {
     navigate('/?tab=settings');
   };
 
   // Use either the currentUser or create a basic user object if not available
-  const displayUser: UserInfo = currentUser || { 
+  const displayUser: UserInfo = currentUser || {
     id: user?.id,
-    email: user?.email || "user@example.com", 
-    name: "User" 
+    email: user?.email || "user@example.com",
+    name: "User"
   };
-
-  return (
-    <header className="bg-white shadow-sm border-b px-6 py-3">
+  return <header className="bg-white shadow-sm border-b px-6 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <img 
-            src="/lovable-uploads/eb8a966b-e206-44a4-9398-d5f242f5e9f4.png" 
-            alt="Arivia Group Logo" 
-            className="h-8 w-auto" 
-          />
-          <h1 className="text-xl font-semibold text-gray-800">
-            Αυτοματισμός Παραστατικών
-          </h1>
+          <img src="/lovable-uploads/eb8a966b-e206-44a4-9398-d5f242f5e9f4.png" alt="Arivia Group Logo" className="h-8 w-auto" />
+          <h1 className="text-right text-sky-950 font-semibold text-xl">FACTURA</h1>
           
-          {isDevMode && (
-            <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">
+          {isDevMode && <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">
               Dev Mode
-            </span>
-          )}
+            </span>}
         </div>
 
         <div className="flex items-center space-x-4">
           {/* Dev Mode Toggle - Always visible in header */}
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className={isDevMode ? "text-amber-600 border-amber-300" : "text-gray-600"}
-            onClick={toggleDevMode}
-          >
-            {isDevMode ? (
-              <ToggleRight className="h-4 w-4 mr-2" />
-            ) : (
-              <ToggleLeft className="h-4 w-4 mr-2" />
-            )}
+          <Button variant="outline" size="sm" className={isDevMode ? "text-amber-600 border-amber-300" : "text-gray-600"} onClick={toggleDevMode}>
+            {isDevMode ? <ToggleRight className="h-4 w-4 mr-2" /> : <ToggleLeft className="h-4 w-4 mr-2" />}
             {isDevMode ? "Disable Dev Mode" : "Enable Dev Mode"}
           </Button>
 
-          {(isAuthenticated || isDevMode) && (
-            <>
+          {(isAuthenticated || isDevMode) && <>
               <NavigationMenu>
                 <NavigationMenuList>
                   <NavigationMenuItem>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-gray-600 hover:text-brand-blue"
-                      onClick={() => handleNavigate('emails')}
-                    >
+                    <Button variant="ghost" size="sm" className="text-gray-600 hover:text-brand-blue" onClick={() => handleNavigate('emails')}>
                       <Home className="h-4 w-4 mr-2" />
                       Αρχική
                     </Button>
                   </NavigationMenuItem>
                   <NavigationMenuItem>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-gray-600 hover:text-brand-blue"
-                      onClick={() => handleNavigate('upload')}
-                    >
+                    <Button variant="ghost" size="sm" className="text-gray-600 hover:text-brand-blue" onClick={() => handleNavigate('upload')}>
                       <Upload className="h-4 w-4 mr-2" />
                       Ανέβασμα
                     </Button>
@@ -146,12 +107,9 @@ const Header: React.FC = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </>
-          )}
+            </>}
         </div>
       </div>
-    </header>
-  );
+    </header>;
 };
-
 export default Header;
