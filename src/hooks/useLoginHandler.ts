@@ -1,8 +1,7 @@
-
 import { useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { useSupabaseAuth } from "@/contexts/supabase/SupabaseAuthContext";
+import { useSupabaseAuth } from "@/contexts/supabase/auth";
 
 export function useLoginHandler() {
   const [isLoading, setIsLoading] = useState(false);

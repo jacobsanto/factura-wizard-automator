@@ -2,7 +2,7 @@
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
-import { SupabaseAuthProvider } from "@/contexts/supabase/SupabaseAuthContext";
+import { SupabaseAuthProvider } from "@/contexts/supabase/auth";
 import { DevModeProvider } from "@/contexts/DevModeContext";
 import Index from "@/pages/Index";
 import Home from "@/pages/Home";
