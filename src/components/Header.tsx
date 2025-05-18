@@ -1,7 +1,7 @@
-
 import React, { useEffect, useState } from "react";
 import { useSupabaseAuth } from "@/contexts/supabase/SupabaseAuthContext";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   DropdownMenu, 
@@ -18,9 +18,12 @@ import {
 import { LogOut, Settings, HelpCircle, Home, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, UserInfo } from "@/utils/userUtils";
+import { DevModeToggle } from "@/components/DevModeToggle";
+import { useDevMode } from "@/contexts/DevModeAuthContext";
 
 const Header: React.FC = () => {
   const { isAuthenticated, user, signOut } = useSupabaseAuth();
+  const { isDevMode } = useDevMode();
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<UserInfo | null>(null);
   
@@ -99,6 +102,9 @@ const Header: React.FC = () => {
                 Βοήθεια
               </Button>
               
+              {/* Dev Mode Toggle - new component */}
+              <DevModeToggle />
+              
               <DropdownMenu>
                 <DropdownMenuTrigger className="focus:outline-none">
                   <Avatar className="h-8 w-8 border">
@@ -110,6 +116,11 @@ const Header: React.FC = () => {
                   <div className="px-2 py-1.5">
                     <p className="text-sm font-medium">{displayUser.name || "User"}</p>
                     <p className="text-xs text-muted-foreground">{displayUser.email || "user@example.com"}</p>
+                    {isDevMode && (
+                      <Badge variant="outline" className="mt-1 text-xs bg-amber-100 text-amber-800 border-amber-300">
+                        Development Mode
+                      </Badge>
+                    )}
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSettingsClick} className="cursor-pointer">
