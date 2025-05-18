@@ -45,7 +45,7 @@ const Header: React.FC = () => {
   return <header className="bg-white shadow-sm border-b px-6 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3 mx-0 px-[5px]">
-          <img src="/lovable-uploads/eb8a966b-e206-44a4-9398-d5f242f5e9f4.png" alt="Arivia Group Logo" className="h-12 w-auto object-cover" />
+          <img src="/lovable-uploads/71c1dde9-c19a-4c28-8ac8-fb92c644916c.png" alt="Factura Automations Logo" className="h-12 w-auto object-contain" />
           
           
           {isDevMode && <span className="text-xs bg-amber-100 text-amber-800 py-1 rounded-full mx-0 px-[9px]">
