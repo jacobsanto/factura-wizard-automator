@@ -8,7 +8,6 @@ import { NavigationMenu, NavigationMenuList, NavigationMenuItem } from "@/compon
 import { LogOut, Settings, HelpCircle, Home, Upload, ToggleLeft, ToggleRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, UserInfo } from "@/utils/userUtils";
-
 const Header: React.FC = () => {
   const {
     isAuthenticated,
@@ -46,7 +45,7 @@ const Header: React.FC = () => {
   return <header className="bg-white shadow-sm border-b px-6 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3 mx-0 px-[5px]">
-          <img src="/lovable-uploads/fd2ba1a1-1352-49ce-910a-79da80c70fe9.png" alt="Factura Automations Logo" className="h-12 w-auto object-contain" />
+          <img src="/lovable-uploads/eb8a966b-e206-44a4-9398-d5f242f5e9f4.png" alt="Arivia Group Logo" className="h-12 w-auto object-cover" />
           
           
           {isDevMode && <span className="text-xs bg-amber-100 text-amber-800 py-1 rounded-full mx-0 px-[9px]">
@@ -113,5 +112,4 @@ const Header: React.FC = () => {
       </div>
     </header>;
 };
-
 export default Header;
