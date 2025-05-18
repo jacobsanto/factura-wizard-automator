@@ -150,7 +150,7 @@ export const SupabaseAuthProvider = ({ children }: { children: React.ReactNode }
         provider: 'google',
         options: {
           redirectTo: window.location.origin,
-          scopes: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets profile email',
+          scopes: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/contacts.readonly profile email',
         }
       });
       

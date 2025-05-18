@@ -54,9 +54,23 @@ const Login: React.FC = () => {
               </div>
               <span className="text-base font-medium">
                 {isLoading ? 'Σύνδεση με Google...' : 'Σύνδεση με Google'}
-                <span className="block text-xs text-gray-500 mt-1">Απαιτείται για πλήρη πρόσβαση στις λειτουργίες της εφαρμογής</span>
+                <span className="block text-xs text-gray-500 mt-1">
+                  Παρέχει πρόσβαση σε Gmail, Drive, Ημερολόγιο και Επαφές για πλήρη λειτουργικότητα
+                </span>
               </span>
             </Button>
+          </div>
+          
+          {/* Permission information */}
+          <div className="text-xs text-gray-500 mt-2">
+            <h3 className="font-medium text-gray-700 mb-1">Η εφαρμογή θα έχει πρόσβαση:</h3>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Στα emails σας (για ανάκτηση παραστατικών)</li>
+              <li>Στο Google Drive (για αποθήκευση αρχείων)</li>
+              <li>Στα Google Sheets (για καταχώρηση δεδομένων)</li>
+              <li>Στο Ημερολόγιο (για προβολή γεγονότων)</li>
+              <li>Στις Επαφές (για πρόσβαση στοιχείων επικοινωνίας)</li>
+            </ul>
           </div>
           
           {/* Test connection button (only in debug mode) */}
