@@ -1,3 +1,4 @@
+
 /**
  * Utilities for file and folder naming
  */
@@ -52,45 +53,73 @@ function normalizeDate(input: string): string {
 }
 
 /**
+ * Convert currency code to symbol
+ */
+function currencyToSymbol(currency: string): string {
+  const map: Record<string, string> = {
+    'EUR': '€',
+    'USD': '$',
+    'GBP': '£',
+    'JPY': '¥',
+    'euro': '€',
+    'ευρώ': '€',
+    'EURO': '€',
+    'ΕΥΡΩ': '€'
+  };
+  
+  // If it's already a symbol, return it
+  if (['€', '$', '£', '¥'].includes(currency)) {
+    return currency;
+  }
+  
+  // If it's in our map, convert it
+  if (map[currency]) {
+    return map[currency];
+  }
+  
+  // Default to euro symbol for Greek invoices
+  return '€';
+}
+
+/**
  * Generate a standardized filename for a document
- * Format: Παρ_[ClientName]_[IssuerName]_[InvoiceNumber]_[Date]_[Amount][Currency].pdf
+ * Format: Παρ_[IssuerName]_[InvoiceNumber]_[Date]_[Amount][Currency Symbol].pdf
  */
 export const generateFilename = async (docData: DocumentData): Promise<string> => {
-  const cleanedClientName = sanitizeText(docData.clientName || "Unknown_Client");
   const cleanedSupplier = sanitizeText(docData.supplier);
   const cleanedNumber = sanitizeText(docData.documentNumber);
   const cleanedDate = normalizeDate(docData.date);
   const cleanedAmount = sanitizeText(docData.amount.toString());
+  const currencySymbol = currencyToSymbol(docData.currency);
   
-  return `Παρ_${cleanedClientName}_${cleanedSupplier}_${cleanedNumber}_${cleanedDate}_${cleanedAmount}${docData.currency}.pdf`;
+  return `Παρ_${cleanedSupplier}_${cleanedNumber}_${cleanedDate}_${cleanedAmount}${currencySymbol}.pdf`;
 };
 
 /**
  * Generate invoice filename with extended options
- * Format: Παρ_[ClientName]_[IssuerName]_[InvoiceNumber]_[Date]_[Amount][Currency].pdf
+ * Format: Παρ_[IssuerName]_[InvoiceNumber]_[Date]_[Amount][Currency Symbol].pdf
  */
 export function generateInvoiceFilename({
-  clientName,
   issuer,
   invoiceNumber,
   date,
   amount,
-  currency,
+  currency
 }: {
-  clientName: string;
+  clientName?: string; // Kept for backward compatibility but not used
   issuer: string;
   invoiceNumber: string;
   date: string;
   amount: string;
   currency: string;
 }): string {
-  const cleanedClientName = sanitizeText(clientName || "Unknown_Client");
   const cleanedIssuer = sanitizeText(issuer);
   const cleanedInvoice = sanitizeText(invoiceNumber);
   const cleanedDate = normalizeDate(date);
   const cleanedAmount = sanitizeText(amount);
+  const currencySymbol = currencyToSymbol(currency);
 
-  return `Παρ_${cleanedClientName}_${cleanedIssuer}_${cleanedInvoice}_${cleanedDate}_${cleanedAmount}${currency}.pdf`;
+  return `Παρ_${cleanedIssuer}_${cleanedInvoice}_${cleanedDate}_${cleanedAmount}${currencySymbol}.pdf`;
 }
 
 /**
@@ -161,7 +190,11 @@ export function generateDrivePath({
   }
   
   // Add the rest of the path segments
-  const clientFolder = `${sanitizeText(clientName)} ΑΦΜ: ${clientVat}`;
+  // Make sure the VAT number is clearly included in the client folder name
+  const cleanedVAT = clientVat.replace(/[^0-9A-Za-z]/g, ''); // Clean VAT number
+  const clientFolder = `${sanitizeText(clientName)} ΑΦΜ: ${cleanedVAT}`;
+  
+  // Determine if it's an intra-community invoice
   const typeFolder = clientVat.startsWith("EL") ? "Ενδοκοινοτικά" : "Παραστατικά εξόδων";
   const vendorFolder = sanitizeText(issuer);
   

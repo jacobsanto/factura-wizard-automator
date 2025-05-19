@@ -14,6 +14,7 @@ import {
   extractAmount,
   extractCurrency
 } from "@/api/extractionPatterns";
+import { useSettings } from "@/contexts/SettingsContext";
 
 export class DataExtractorService {
   private static instance: DataExtractorService;
@@ -31,7 +32,21 @@ export class DataExtractorService {
   }
 
   /**
+   * Clean and normalize VAT number
+   */
+  private cleanVatNumber(vatNumber: string): string {
+    if (!vatNumber || vatNumber === "unknown") return "Unknown";
+    
+    // Remove common prefixes and non-alphanumeric characters
+    return vatNumber
+      .replace(/^(ΑΦΜ|ΑΦΜ:|Α\.?Φ\.?Μ\.?|VAT|VAT:)\s*/i, '')
+      .replace(/[^0-9A-Za-z]/g, '')
+      .trim();
+  }
+
+  /**
    * Extract data from a PDF file using multi-tiered approach
+   * with priority on VAT number extraction
    */
   async extractDataFromPdf(pdfBlob: Blob): Promise<DocumentData> {
     console.log("Attempting to extract data from PDF blob", {
@@ -40,78 +55,77 @@ export class DataExtractorService {
     });
     
     try {
-      // Step 1: Try using the direct PDF method with enhanced GPT
+      // Get user settings to check if AI extraction is enabled
+      let enableAI = true;
+      let preferGreekExtraction = true;
+      
       try {
-        console.log("Attempting extraction with enhanced GPT directly from PDF");
-        const gptData = await extractInvoiceDataFromPdf(pdfBlob);
-        
-        // If GPT returns meaningful data, use it
-        if (gptData.vatNumber !== "unknown" && 
-            gptData.documentNumber !== "unknown" && 
-            gptData.clientName !== "unknown") {
-          
-          console.log("Successfully extracted data with enhanced GPT", gptData);
-          return {
-            vatNumber: gptData.vatNumber,
-            date: gptData.date,
-            documentNumber: gptData.documentNumber,
-            supplier: gptData.issuer,
-            amount: parseFloat(gptData.amount) || 0,
-            currency: gptData.currency,
-            clientName: gptData.clientName
-          };
-        } else {
-          console.log("Enhanced GPT extraction didn't provide sufficient data, trying other methods");
+        // Try to get settings from localStorage directly since we can't use React hooks here
+        const savedSettings = localStorage.getItem("userSettings");
+        if (savedSettings) {
+          const parsedSettings = JSON.parse(savedSettings);
+          enableAI = parsedSettings.enableAI !== false; // Default to true if not specified
+          preferGreekExtraction = parsedSettings.preferGreekExtraction !== false; // Default to true
         }
-      } catch (enhancedGptError) {
-        console.warn("Enhanced GPT extraction failed, falling back to other methods", enhancedGptError);
+      } catch (e) {
+        console.error("Error reading settings:", e);
       }
       
-      // Step 2: Try using the text extraction + GPT approach
-      try {
-        console.log("Attempting text extraction first, then GPT");
-        const extractedText = await extractTextFromPdf(pdfBlob);
-        const gptData = await extractInvoiceDataWithGpt(extractedText);
-        
-        // If GPT returns meaningful data, use it
-        if (gptData.vatNumber !== "unknown" && 
-            gptData.documentNumber !== "unknown" && 
-            gptData.clientName !== "unknown Client") {
+      // Step 1: Try using AI-powered extraction if enabled
+      if (enableAI) {
+        try {
+          console.log("Attempting extraction with AI directly from PDF");
+          const gptData = await extractInvoiceDataFromPdf(pdfBlob);
           
-          console.log("Successfully extracted data with GPT from text", gptData);
-          return {
-            vatNumber: gptData.vatNumber,
-            date: gptData.date,
-            documentNumber: gptData.documentNumber,
-            supplier: gptData.issuer,
-            amount: parseFloat(gptData.amount) || 0,
-            currency: gptData.currency,
-            clientName: gptData.clientName
-          };
-        } else {
-          console.log("GPT extraction from text didn't provide sufficient data, falling back to other methods");
+          // Extract and clean the VAT number as a priority
+          const vatNumber = this.cleanVatNumber(gptData.vatNumber);
+          
+          // If AI returns meaningful data with a VAT number, use it
+          if (vatNumber !== "Unknown" && 
+              gptData.documentNumber !== "unknown" && 
+              gptData.issuer !== "unknown") {
+            
+            console.log("Successfully extracted data with AI", gptData);
+            console.log("Extracted VAT number:", vatNumber);
+            
+            return {
+              vatNumber: vatNumber,
+              date: gptData.date,
+              documentNumber: gptData.documentNumber,
+              supplier: gptData.issuer,
+              amount: parseFloat(gptData.amount) || 0,
+              currency: gptData.currency,
+              clientName: gptData.clientName
+            };
+          } else {
+            console.log("AI extraction didn't provide sufficient data, trying other methods");
+          }
+        } catch (aiError) {
+          console.warn("AI extraction failed, falling back to other methods", aiError);
         }
-      } catch (gptError) {
-        console.warn("GPT extraction from text failed, falling back to other methods", gptError);
       }
       
-      // Step 3: If GPT fails, try multi-tiered extraction with PDF.js and OCR
-      console.log("Attempting multi-tiered extraction with PDF.js and OCR");
+      // Step 2: Try pure text extraction with pattern matching
+      console.log("Attempting multi-tiered extraction with PDF.js");
       const extractedText = await extractTextFromPdfAdvanced(pdfBlob);
       console.log("Text extracted successfully", {
         textLength: extractedText.length,
         textSample: extractedText.substring(0, 100) + "..."
       });
       
-      // Extract data using patterns
-      const vatNumber = extractVatNumber(extractedText) || "Unknown";
-      const clientName = extractClientName(extractedText) || "Unknown Client";
-      const issuer = extractIssuer(extractedText) || "Unknown";
+      // Priority 1: Extract VAT number first
+      const rawVatNumber = extractVatNumber(extractedText);
+      const vatNumber = this.cleanVatNumber(rawVatNumber || "Unknown");
+      console.log("Extracted VAT number:", vatNumber);
+      
+      // Extract remaining data
+      const clientName = extractClientName(extractedText) || "Άγνωστος Πελάτης";
+      const issuer = extractIssuer(extractedText) || "Άγνωστος Προμηθευτής";
       const date = extractDate(extractedText) || new Date().toISOString().split('T')[0];
       const documentNumber = extractInvoiceNumber(extractedText) || "Unknown";
       const amountString = extractAmount(extractedText) || "0";
-      const amount = parseFloat(amountString) || 0;
-      const currency = extractCurrency(extractedText) || "€";
+      const amount = parseFloat(amountString.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+      const currencyStr = extractCurrency(extractedText) || "€";
       
       const extractedData = {
         vatNumber,
@@ -119,7 +133,7 @@ export class DataExtractorService {
         documentNumber,
         supplier: issuer,
         amount,
-        currency,
+        currency: currencyStr,
         clientName
       };
 
@@ -155,11 +169,18 @@ export class DataExtractorService {
       
       console.log("GPT extraction returned data:", extractedData);
       
+      // Clean the VAT number
+      const vatNumber = this.cleanVatNumber(extractedData.vatNumber);
+      
       // Convert the string amount to number and ensure supplier field exists
       const resultData = {
-        ...extractedData,
+        vatNumber,
+        date: extractedData.date,
+        documentNumber: extractedData.documentNumber,
+        supplier: extractedData.issuer, // Map issuer to supplier for DocumentData compatibility
         amount: parseFloat(extractedData.amount) || 0,
-        supplier: extractedData.issuer // Map issuer to supplier for DocumentData compatibility
+        currency: extractedData.currency,
+        clientName: extractedData.clientName
       };
       
       console.log("Processed GPT extraction result:", resultData);

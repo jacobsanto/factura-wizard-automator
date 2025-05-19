@@ -33,13 +33,17 @@ export async function fetchEmailsWithLabel(label: string): Promise<EmailData[]> 
     const targetLabel = labels.labels.find((l: any) => l.name === label);
     
     if (!targetLabel) {
-      console.log(`Label '${label}' not found. Fetching all inbox emails with attachments.`);
+      console.log(`Label '${label}' not found. Fetching all inbox emails with invoice-related attachments.`);
     }
 
-    // Query for messages with the specified label or all inbox emails with attachments if label not found
+    // Query for messages with the specified label or invoice-related emails if label not found
+    // Look for emails that might contain invoices (subject contains invoice keywords or has attachments)
+    const invoiceKeywords = 'invoice OR τιμολόγιο OR παραστατικό OR ΑΦΜ OR VAT OR φόρος OR πληρωμή OR payment';
     const queryParam = targetLabel 
       ? `label:${targetLabel.id}` 
-      : 'in:inbox has:attachment';
+      : `in:inbox (has:attachment (${invoiceKeywords}))`;
+    
+    console.log("Using query parameter:", queryParam);
     
     // Increased maxResults to fetch more emails
     const messagesResponse = await fetch(
@@ -87,11 +91,23 @@ export async function fetchEmailsWithLabel(label: string): Promise<EmailData[]> 
       const from = headers.find((h: any) => h.name === 'From')?.value || 'Unknown Sender';
       const date = headers.find((h: any) => h.name === 'Date')?.value || new Date().toISOString();
       
+      // Check if the subject contains invoice-related keywords
+      const subjectLower = subject.toLowerCase();
+      const isInvoiceRelated = 
+        subjectLower.includes('invoice') || 
+        subjectLower.includes('τιμολόγιο') || 
+        subjectLower.includes('παραστατικό') || 
+        subjectLower.includes('αφμ') || 
+        subjectLower.includes('vat') ||
+        subjectLower.includes('φόρος') ||
+        subjectLower.includes('πληρωμή') ||
+        subjectLower.includes('payment');
+      
       // Look for attachments
       const attachments = processAttachments(messageData.payload);
       
-      // Only include emails with PDF attachments
-      if (attachments.length > 0) {
+      // Only include emails that are invoice-related or have PDF attachments that might be invoices
+      if (isInvoiceRelated || attachments.length > 0) {
         emails.push({
           id: messageData.id,
           subject,

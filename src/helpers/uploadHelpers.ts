@@ -6,6 +6,21 @@
 import { EnhancedDriveService } from "@/services/drive";
 import { DocumentData } from "@/types";
 import { logDocumentUpload } from "./logHelpers";
+import { verifyInvoiceDocument } from "@/services/gmail/attachments";
+
+/**
+ * Verify if a PDF is an invoice before processing
+ */
+export const verifyInvoiceFile = async (
+  file: Blob
+): Promise<boolean> => {
+  try {
+    return await verifyInvoiceDocument(file);
+  } catch (error) {
+    console.error("Error verifying invoice file:", error);
+    return false;
+  }
+};
 
 /**
  * Upload an invoice to Google Drive with automatic path and filename generation
@@ -15,6 +30,13 @@ export const uploadInvoiceToDrive = async (
   docData: DocumentData
 ): Promise<{ success: boolean; fileId?: string; fileName?: string }> => {
   try {
+    // First verify this is an invoice
+    const isInvoice = await verifyInvoiceFile(file);
+    if (!isInvoice) {
+      console.warn("File does not appear to be an invoice");
+      // Continue anyway since the user manually uploaded it
+    }
+    
     const driveService = EnhancedDriveService.getInstance();
     
     // Upload the file with the user folder included in the path
@@ -61,6 +83,7 @@ export const uploadFile = async (
   }
 ): Promise<{ success: boolean; fileId?: string; fileName?: string }> => {
   try {
+    // For manual uploads, no need to verify if it's an invoice
     const driveService = EnhancedDriveService.getInstance();
     
     // Include user folder by default

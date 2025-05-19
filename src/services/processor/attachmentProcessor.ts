@@ -8,6 +8,7 @@ import { EnhancedDriveService } from "../drive";
 import { LoggingService } from "../LoggingService";
 import { DataExtractorService } from "./dataExtractor";
 import { ProcessResult } from "./types";
+import { verifyInvoiceDocument } from "../gmail/attachments";
 
 export class AttachmentProcessorService {
   private static instance: AttachmentProcessorService;
@@ -64,18 +65,35 @@ export class AttachmentProcessorService {
         size: pdfBlob.size 
       });
       
-      // Extract data
+      // Verify this is actually an invoice document
+      updateCallback({ status: "processing", message: "Επιβεβαίωση τύπου εγγράφου..." });
+      const isInvoice = await verifyInvoiceDocument(pdfBlob);
+      
+      if (!isInvoice) {
+        console.log("Document is not an invoice, skipping processing");
+        updateCallback({ status: "error", message: "Το έγγραφο δεν είναι τιμολόγιο" });
+        return { success: false, message: "Document is not an invoice" };
+      }
+      
+      console.log("Document verified as invoice, proceeding with data extraction");
+      
+      // Extract data with priority on VAT
       updateCallback({ status: "processing", message: "Εξαγωγή δεδομένων..." });
       console.log("Extracting data from attachment");
       const extractedData = await this.dataExtractor.extractDataFromPdf(pdfBlob);
       console.log("Data extracted successfully", extractedData);
       
-      // Try to use the streamlined upload function first
+      // Validate VAT number - it's critical for folder structure
+      if (!extractedData.vatNumber || extractedData.vatNumber === "Unknown") {
+        console.warn("No valid VAT number found, this may affect folder structure");
+      }
+      
+      // Try to use the streamlined upload function
       updateCallback({ status: "processing", message: "Μεταφόρτωση αρχείου στο Drive..." });
       console.log("Attempting streamlined upload to Drive");
       
       try {
-        // Use the new direct upload method
+        // Use the new direct upload method with updated filename format
         const uploadParams = {
           file: pdfBlob,
           clientVat: extractedData.vatNumber,
@@ -116,7 +134,7 @@ export class AttachmentProcessorService {
         // Fall back to the legacy upload method
         updateCallback({ status: "processing", message: "Προετοιμασία αποθήκευσης..." });
         
-        // Generate new filename
+        // Generate new filename based on updated format
         const newFilename = await this.driveService.generateFilename(extractedData);
         console.log("Generated filename:", newFilename);
         
