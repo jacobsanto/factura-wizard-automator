@@ -9,7 +9,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/$
 /**
  * Extract text content from a PDF file using PDF.js
  */
-export async function extractTextFromPdf(pdfFile: File | Blob): Promise<string> {
+export async function extractTextFromPdf(pdfFile: File | Blob, options?: { maxPages?: number }): Promise<string> {
   try {
     console.log("Starting PDF text extraction with PDF.js");
     const arrayBuffer = await pdfFile.arrayBuffer();
@@ -21,7 +21,8 @@ export async function extractTextFromPdf(pdfFile: File | Blob): Promise<string> 
     let fullText = '';
     
     // Extract text from each page
-    for (let i = 1; i <= pdf.numPages; i++) {
+    const maxPages = options?.maxPages || pdf.numPages;
+    for (let i = 1; i <= Math.min(maxPages, pdf.numPages); i++) {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
       const pageText = textContent.items

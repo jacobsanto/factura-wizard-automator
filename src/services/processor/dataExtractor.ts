@@ -251,7 +251,8 @@ export class DataExtractorService {
   private async extractSampleText(pdfBlob: Blob): Promise<string> {
     try {
       // Extract the first page or first 1000 characters
-      const text = await extractTextFromPdf(pdfBlob, { maxPages: 1 });
+      // FIX: Removing the second argument that causes the TypeScript error
+      const text = await extractTextFromPdf(pdfBlob);
       return text.substring(0, 1000);
     } catch (e) {
       console.error("Error extracting sample text:", e);
