@@ -16,6 +16,8 @@ const defaultSettings: UserSettings = {
   enableAI: true, // Enable AI extraction by default
   preferGreekExtraction: true, // Optimize for Greek invoices by default
   aiConfidenceThreshold: 70, // 70% confidence threshold by default
+  strictInvoiceCheck: true, // Enable strict invoice verification by default
+  pdfOnly: true, // Only process PDF files by default
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);

@@ -63,4 +63,6 @@ export interface UserSettings {
   enableAI?: boolean; // Whether to use AI for data extraction
   preferGreekExtraction?: boolean; // Whether to optimize for Greek invoices
   aiConfidenceThreshold?: number; // Minimum confidence level for AI extraction (0-100)
+  strictInvoiceCheck?: boolean; // Whether to strictly verify if files are invoices
+  pdfOnly?: boolean; // Whether to only process PDF files
 }
