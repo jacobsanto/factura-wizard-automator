@@ -73,7 +73,7 @@ export class DataExtractorService extends BaseExtractor {
       // Step 1: Try Document AI if enabled and preferred for Greek documents
       if (enableDocumentAI && (documentAIPreferredForGreek && containsGreek)) {
         console.log("Attempting Document AI extraction (preferred for Greek)");
-        const documentAIResult = await this.documentAiExtractor.extract(pdfBlob);
+        const documentAIResult = await this.documentAiExtractor.extractWithConfidence(pdfBlob);
         
         if (documentAIResult) {
           console.log("Document AI extraction successful");
@@ -88,7 +88,7 @@ export class DataExtractorService extends BaseExtractor {
       // Step 2: Try using AI-powered extraction if enabled
       if (enableAI) {
         try {
-          const gptResult = await this.gptExtractor.extract(pdfBlob);
+          const gptResult = await this.gptExtractor.extractWithConfidence(pdfBlob);
           results.push({
             data: gptResult.data,
             confidence: gptResult.confidence,
@@ -102,7 +102,7 @@ export class DataExtractorService extends BaseExtractor {
       // Step 3: Try Document AI if enabled but not already tried
       if (enableDocumentAI && !(documentAIPreferredForGreek && containsGreek) && results.length === 0) {
         console.log("Attempting Document AI extraction as fallback");
-        const documentAIResult = await this.documentAiExtractor.extract(pdfBlob);
+        const documentAIResult = await this.documentAiExtractor.extractWithConfidence(pdfBlob);
         
         if (documentAIResult) {
           console.log("Document AI fallback extraction successful");
@@ -172,7 +172,7 @@ export class DataExtractorService extends BaseExtractor {
    */
   async extractWithGpt(pdfBlob: Blob): Promise<DocumentData> {
     try {
-      const result = await this.gptExtractor.extract(pdfBlob);
+      const result = await this.gptExtractor.extractWithConfidence(pdfBlob);
       return result.data;
     } catch (error) {
       console.error("Error extracting with GPT:", error);
