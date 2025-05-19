@@ -1,4 +1,3 @@
-
 /**
  * Service for processing attachments
  */
@@ -8,7 +7,7 @@ import { EnhancedDriveService } from "../drive";
 import { LoggingService } from "../LoggingService";
 import { DataExtractorService } from "./dataExtractor";
 import { ProcessResult } from "./types";
-import { verifyInvoiceDocument } from "../gmail/attachments";
+import { verifyInvoiceDocument } from "../gmail/invoice-detection";
 
 export class AttachmentProcessorService {
   private static instance: AttachmentProcessorService;
