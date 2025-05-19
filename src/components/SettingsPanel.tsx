@@ -80,6 +80,38 @@ const SettingsPanel: React.FC = () => {
           </CardContent>
         </Card>
         
+        {/* Invoice Filtering Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Φιλτράρισμα Τιμολογίων</CardTitle>
+            <CardDescription>
+              Ρυθμίσεις για το φιλτράρισμα των τιμολογίων και παραστατικών
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="strict-invoice-check">Αυστηρός Έλεγχος Τιμολογίων</Label>
+              <Switch 
+                id="strict-invoice-check" 
+                checked={settings.strictInvoiceCheck !== false}
+                onCheckedChange={(checked) => updateSettings({ strictInvoiceCheck: checked })}
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Όταν είναι ενεργοποιημένο, μόνο αρχεία που αναγνωρίζονται με βεβαιότητα ως τιμολόγια θα επεξεργάζονται
+            </p>
+            
+            <div className="flex items-center justify-between">
+              <Label htmlFor="pdf-only">Μόνο Αρχεία PDF</Label>
+              <Switch 
+                id="pdf-only" 
+                checked={settings.pdfOnly !== false}
+                onCheckedChange={(checked) => updateSettings({ pdfOnly: checked })}
+              />
+            </div>
+          </CardContent>
+        </Card>
+        
         {/* Google Sheets Settings */}
         <Card>
           <CardHeader>

@@ -65,12 +65,12 @@ export class AttachmentProcessorService {
         size: pdfBlob.size 
       });
       
-      // Verify this is actually an invoice document
+      // Verify this is actually an invoice document - enforce this check
       updateCallback({ status: "processing", message: "Επιβεβαίωση τύπου εγγράφου..." });
       const isInvoice = await verifyInvoiceDocument(pdfBlob);
       
       if (!isInvoice) {
-        console.log("Document is not an invoice, skipping processing");
+        console.log("Document is not an invoice, stopping processing");
         updateCallback({ status: "error", message: "Το έγγραφο δεν είναι τιμολόγιο" });
         return { success: false, message: "Document is not an invoice" };
       }

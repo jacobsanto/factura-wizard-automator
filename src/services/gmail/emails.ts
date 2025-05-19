@@ -4,7 +4,7 @@
  */
 import { getValidAccessToken } from '../googleAuth';
 import { EmailData, AttachmentData } from '@/types';
-import { processAttachments } from './attachments';
+import { processAttachments, isInvoiceDocument } from './attachments';
 
 export async function fetchEmailsWithLabel(label: string): Promise<EmailData[]> {
   try {
@@ -33,15 +33,18 @@ export async function fetchEmailsWithLabel(label: string): Promise<EmailData[]> 
     const targetLabel = labels.labels.find((l: any) => l.name === label);
     
     if (!targetLabel) {
-      console.log(`Label '${label}' not found. Fetching all inbox emails with invoice-related attachments.`);
+      console.log(`Label '${label}' not found. Fetching invoice-related emails.`);
     }
 
-    // Query for messages with the specified label or invoice-related emails if label not found
-    // Look for emails that might contain invoices (subject contains invoice keywords or has attachments)
-    const invoiceKeywords = 'invoice OR τιμολόγιο OR παραστατικό OR ΑΦΜ OR VAT OR φόρος OR πληρωμή OR payment';
+    // More specific query for invoices - using more precise keywords and targeting attachments
+    // Use stricter keywords that are very common in actual invoices
+    const invoiceKeywords = 'invoice OR τιμολόγιο OR παραστατικό OR ΑΦΜ OR "tax invoice" OR receipt';
+    const attachmentType = 'filename:pdf';
+    
+    // Create a more specific query that focuses on actual invoices
     const queryParam = targetLabel 
-      ? `label:${targetLabel.id}` 
-      : `in:inbox (has:attachment (${invoiceKeywords}))`;
+      ? `label:${targetLabel.id} has:attachment ${attachmentType} (${invoiceKeywords})` 
+      : `in:inbox has:attachment ${attachmentType} (${invoiceKeywords})`;
     
     console.log("Using query parameter:", queryParam);
     
@@ -91,7 +94,7 @@ export async function fetchEmailsWithLabel(label: string): Promise<EmailData[]> 
       const from = headers.find((h: any) => h.name === 'From')?.value || 'Unknown Sender';
       const date = headers.find((h: any) => h.name === 'Date')?.value || new Date().toISOString();
       
-      // Check if the subject contains invoice-related keywords
+      // Check if the subject contains invoice-related keywords - be more strict
       const subjectLower = subject.toLowerCase();
       const isInvoiceRelated = 
         subjectLower.includes('invoice') || 
@@ -99,15 +102,18 @@ export async function fetchEmailsWithLabel(label: string): Promise<EmailData[]> 
         subjectLower.includes('παραστατικό') || 
         subjectLower.includes('αφμ') || 
         subjectLower.includes('vat') ||
-        subjectLower.includes('φόρος') ||
-        subjectLower.includes('πληρωμή') ||
-        subjectLower.includes('payment');
+        subjectLower.includes('receipt') ||
+        subjectLower.includes('tax');
       
-      // Look for attachments
+      // Get attachments but only include PDFs that are likely to be invoices
       const attachments = processAttachments(messageData.payload);
       
-      // Only include emails that are invoice-related or have PDF attachments that might be invoices
-      if (isInvoiceRelated || attachments.length > 0) {
+      // Only include emails that have strong invoice indicators:
+      // 1. Invoice-related subject AND has attachments, or
+      // 2. Has PDF attachments with invoice-related filenames
+      const hasInvoiceAttachments = attachments.length > 0;
+      
+      if ((isInvoiceRelated && hasInvoiceAttachments) || hasInvoiceAttachments) {
         emails.push({
           id: messageData.id,
           subject,

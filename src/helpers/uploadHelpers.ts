@@ -1,4 +1,3 @@
-
 /**
  * Upload Helper Functions
  * Simplified file upload functions
@@ -15,7 +14,25 @@ export const verifyInvoiceFile = async (
   file: Blob
 ): Promise<boolean> => {
   try {
-    return await verifyInvoiceDocument(file);
+    // Get settings to determine if we should strictly verify
+    let strictVerification = true;
+    try {
+      const savedSettings = localStorage.getItem("userSettings");
+      if (savedSettings) {
+        const parsedSettings = JSON.parse(savedSettings);
+        strictVerification = parsedSettings.strictInvoiceCheck !== false;
+      }
+    } catch (error) {
+      console.error("Error reading settings:", error);
+    }
+    
+    // Only perform verification if strict checking is enabled
+    if (strictVerification) {
+      return await verifyInvoiceDocument(file);
+    } else {
+      // Skip verification if strict checking is disabled
+      return true;
+    }
   } catch (error) {
     console.error("Error verifying invoice file:", error);
     return false;
@@ -34,7 +51,27 @@ export const uploadInvoiceToDrive = async (
     const isInvoice = await verifyInvoiceFile(file);
     if (!isInvoice) {
       console.warn("File does not appear to be an invoice");
-      // Continue anyway since the user manually uploaded it
+      // Get settings to determine if we should block non-invoices
+      let strictVerification = true;
+      try {
+        const savedSettings = localStorage.getItem("userSettings");
+        if (savedSettings) {
+          const parsedSettings = JSON.parse(savedSettings);
+          strictVerification = parsedSettings.strictInvoiceCheck !== false;
+        }
+      } catch (error) {
+        console.error("Error reading settings:", error);
+      }
+      
+      // If strict verification is enabled, block non-invoice uploads
+      if (strictVerification) {
+        return { 
+          success: false, 
+          fileId: undefined, 
+          fileName: undefined 
+        };
+      }
+      // Otherwise continue with the upload
     }
     
     const driveService = EnhancedDriveService.getInstance();
@@ -83,7 +120,32 @@ export const uploadFile = async (
   }
 ): Promise<{ success: boolean; fileId?: string; fileName?: string }> => {
   try {
-    // For manual uploads, no need to verify if it's an invoice
+    // For manual uploads, verify if it's an invoice based on user settings
+    const isInvoice = await verifyInvoiceFile(file);
+    if (!isInvoice) {
+      console.warn("File does not appear to be an invoice");
+      // Check if strict verification is enabled
+      let strictVerification = true;
+      try {
+        const savedSettings = localStorage.getItem("userSettings");
+        if (savedSettings) {
+          const parsedSettings = JSON.parse(savedSettings);
+          strictVerification = parsedSettings.strictInvoiceCheck !== false;
+        }
+      } catch (error) {
+        console.error("Error reading settings:", error);
+      }
+      
+      // If strict verification is enabled, block non-invoice uploads
+      if (strictVerification) {
+        return { 
+          success: false, 
+          fileId: undefined, 
+          fileName: undefined 
+        };
+      }
+    }
+    
     const driveService = EnhancedDriveService.getInstance();
     
     // Include user folder by default
