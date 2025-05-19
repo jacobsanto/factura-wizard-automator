@@ -7,7 +7,7 @@ import { EnhancedDriveService } from "../drive";
 import { LoggingService } from "../LoggingService";
 import { DataExtractorService } from "./dataExtractor";
 import { ProcessResult } from "./types";
-import { verifyInvoiceDocument } from "../gmail/invoice-detection";
+import { verifyInvoiceDocument } from "../gmail/attachments";
 
 export class AttachmentProcessorService {
   private static instance: AttachmentProcessorService;
