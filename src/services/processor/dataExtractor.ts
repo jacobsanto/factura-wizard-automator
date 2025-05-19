@@ -2,7 +2,7 @@
 /**
  * Service for extracting data from PDF files
  */
-import { DocumentData } from "@/types";
+import { DocumentData, ExtractionResult } from "@/types";
 import { extractInvoiceDataWithGpt, extractInvoiceDataFromPdf } from "@/api/gptApi";
 import { extractTextFromPdf, extractTextFromPdfAdvanced } from "@/utils/pdfUtils";
 import { 
@@ -14,13 +14,15 @@ import {
   extractAmount,
   extractCurrency
 } from "@/api/extractionPatterns";
-import { useSettings } from "@/contexts/SettingsContext";
+import { DocumentAIService } from "../documentAI";
 
 export class DataExtractorService {
   private static instance: DataExtractorService;
+  private documentAIService: DocumentAIService;
 
   private constructor() {
     console.log("DataExtractorService initialized");
+    this.documentAIService = DocumentAIService.getInstance();
   }
 
   public static getInstance(): DataExtractorService {
@@ -45,6 +47,34 @@ export class DataExtractorService {
   }
 
   /**
+   * Check if text contains Greek characters
+   */
+  private containsGreekCharacters(text: string): boolean {
+    return /[\u0370-\u03FF\u1F00-\u1FFF]/.test(text);
+  }
+
+  /**
+   * Get user settings from localStorage
+   */
+  private getUserSettings() {
+    try {
+      const savedSettings = localStorage.getItem("userSettings");
+      if (savedSettings) {
+        return JSON.parse(savedSettings);
+      }
+    } catch (e) {
+      console.error("Error reading settings:", e);
+    }
+    return {
+      enableAI: true,
+      enableDocumentAI: false,
+      preferGreekExtraction: true,
+      documentAIPreferredForGreek: false,
+      aiConfidenceThreshold: 70
+    };
+  }
+
+  /**
    * Extract data from a PDF file using multi-tiered approach
    * with priority on VAT number extraction
    */
@@ -55,26 +85,42 @@ export class DataExtractorService {
     });
     
     try {
-      // Get user settings to check if AI extraction is enabled
-      let enableAI = true;
-      let preferGreekExtraction = true;
+      // Get user settings
+      const settings = this.getUserSettings();
+      const enableAI = settings.enableAI !== false;
+      const enableDocumentAI = settings.enableDocumentAI === true;
+      const preferGreekExtraction = settings.preferGreekExtraction !== false;
+      const documentAIPreferredForGreek = settings.documentAIPreferredForGreek === true;
       
-      try {
-        // Try to get settings from localStorage directly since we can't use React hooks here
-        const savedSettings = localStorage.getItem("userSettings");
-        if (savedSettings) {
-          const parsedSettings = JSON.parse(savedSettings);
-          enableAI = parsedSettings.enableAI !== false; // Default to true if not specified
-          preferGreekExtraction = parsedSettings.preferGreekExtraction !== false; // Default to true
+      // Extract text for language detection
+      const sampleText = await this.extractSampleText(pdfBlob);
+      const containsGreek = this.containsGreekCharacters(sampleText);
+      console.log("Document language detection:", { containsGreek });
+      
+      // Start extraction process
+      const results: ExtractionResult[] = [];
+      
+      // Step 1: Try Document AI if enabled and preferred for Greek documents
+      if (enableDocumentAI && (documentAIPreferredForGreek && containsGreek)) {
+        console.log("Attempting Document AI extraction (preferred for Greek)");
+        const documentAIData = await this.documentAIService.processDocument(pdfBlob);
+        
+        if (documentAIData && documentAIData.vatNumber !== "Unknown") {
+          console.log("Document AI extraction successful");
+          results.push({
+            data: documentAIData,
+            confidence: 90, // High confidence for Document AI on Greek documents
+            method: 'documentAi'
+          });
+        } else {
+          console.log("Document AI extraction failed or returned insufficient data");
         }
-      } catch (e) {
-        console.error("Error reading settings:", e);
       }
       
-      // Step 1: Try using AI-powered extraction if enabled
+      // Step 2: Try using AI-powered extraction if enabled
       if (enableAI) {
         try {
-          console.log("Attempting extraction with AI directly from PDF");
+          console.log("Attempting extraction with GPT directly from PDF");
           const gptData = await extractInvoiceDataFromPdf(pdfBlob);
           
           // Extract and clean the VAT number as a priority
@@ -85,10 +131,9 @@ export class DataExtractorService {
               gptData.documentNumber !== "unknown" && 
               gptData.issuer !== "unknown") {
             
-            console.log("Successfully extracted data with AI", gptData);
-            console.log("Extracted VAT number:", vatNumber);
+            console.log("Successfully extracted data with GPT");
             
-            return {
+            const aiResult: DocumentData = {
               vatNumber: vatNumber,
               date: gptData.date,
               documentNumber: gptData.documentNumber,
@@ -97,28 +142,49 @@ export class DataExtractorService {
               currency: gptData.currency,
               clientName: gptData.clientName
             };
+            
+            // Add to results with confidence based on language
+            results.push({
+              data: aiResult,
+              confidence: containsGreek && !preferGreekExtraction ? 70 : 85,
+              method: 'gpt'
+            });
           } else {
-            console.log("AI extraction didn't provide sufficient data, trying other methods");
+            console.log("GPT extraction didn't provide sufficient data");
           }
         } catch (aiError) {
-          console.warn("AI extraction failed, falling back to other methods", aiError);
+          console.warn("GPT extraction failed:", aiError);
         }
       }
       
-      // Step 2: Try pure text extraction with pattern matching
-      console.log("Attempting multi-tiered extraction with PDF.js");
+      // Step 3: Try Document AI if enabled but not already tried
+      if (enableDocumentAI && !(documentAIPreferredForGreek && containsGreek) && results.length === 0) {
+        console.log("Attempting Document AI extraction as fallback");
+        const documentAIData = await this.documentAIService.processDocument(pdfBlob);
+        
+        if (documentAIData && documentAIData.vatNumber !== "Unknown") {
+          console.log("Document AI fallback extraction successful");
+          results.push({
+            data: documentAIData,
+            confidence: containsGreek ? 85 : 75,
+            method: 'documentAi'
+          });
+        } else {
+          console.log("Document AI fallback extraction failed or returned insufficient data");
+        }
+      }
+      
+      // Step 4: Try pattern matching as a fallback
+      console.log("Attempting pattern matching extraction");
       const extractedText = await extractTextFromPdfAdvanced(pdfBlob);
       console.log("Text extracted successfully", {
         textLength: extractedText.length,
         textSample: extractedText.substring(0, 100) + "..."
       });
       
-      // Priority 1: Extract VAT number first
+      // Extract data using patterns
       const rawVatNumber = extractVatNumber(extractedText);
       const vatNumber = this.cleanVatNumber(rawVatNumber || "Unknown");
-      console.log("Extracted VAT number:", vatNumber);
-      
-      // Extract remaining data
       const clientName = extractClientName(extractedText) || "Άγνωστος Πελάτης";
       const issuer = extractIssuer(extractedText) || "Άγνωστος Προμηθευτής";
       const date = extractDate(extractedText) || new Date().toISOString().split('T')[0];
@@ -127,7 +193,7 @@ export class DataExtractorService {
       const amount = parseFloat(amountString.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
       const currencyStr = extractCurrency(extractedText) || "€";
       
-      const extractedData = {
+      const patternResult: DocumentData = {
         vatNumber,
         date,
         documentNumber,
@@ -136,9 +202,30 @@ export class DataExtractorService {
         currency: currencyStr,
         clientName
       };
-
-      console.log("Successfully extracted data from PDF using patterns:", extractedData);
-      return extractedData;
+      
+      // Add pattern matching result with lower confidence
+      results.push({
+        data: patternResult,
+        confidence: vatNumber !== "Unknown" ? 65 : 40,
+        method: 'pattern'
+      });
+      
+      // Select the best result based on confidence
+      results.sort((a, b) => b.confidence - a.confidence);
+      console.log("Extraction results sorted by confidence:", 
+        results.map(r => ({ method: r.method, confidence: r.confidence, vat: r.data.vatNumber }))
+      );
+      
+      // Return the highest confidence result
+      const bestResult = results[0].data;
+      console.log("Selected best extraction result:", { 
+        method: results[0].method, 
+        confidence: results[0].confidence,
+        result: bestResult
+      });
+      
+      return bestResult;
+      
     } catch (error) {
       console.error("Error extracting data from PDF:", error);
       
@@ -155,6 +242,20 @@ export class DataExtractorService {
       
       console.log("Using fallback data:", fallbackData);
       return fallbackData;
+    }
+  }
+
+  /**
+   * Extract a sample of text from the PDF for language detection
+   */
+  private async extractSampleText(pdfBlob: Blob): Promise<string> {
+    try {
+      // Extract the first page or first 1000 characters
+      const text = await extractTextFromPdf(pdfBlob, { maxPages: 1 });
+      return text.substring(0, 1000);
+    } catch (e) {
+      console.error("Error extracting sample text:", e);
+      return "";
     }
   }
 

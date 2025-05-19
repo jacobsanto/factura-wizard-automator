@@ -7,7 +7,7 @@ import { EnhancedDriveService } from "../drive";
 import { LoggingService } from "../LoggingService";
 import { DataExtractorService } from "./dataExtractor";
 import { ProcessResult } from "./types";
-import { verifyInvoiceDocument } from "../gmail/attachments";
+import { verifyInvoiceDocument } from "../gmail/invoice-detection";
 
 export class AttachmentProcessorService {
   private static instance: AttachmentProcessorService;
@@ -88,7 +88,7 @@ export class AttachmentProcessorService {
       }
       
       // Try to use the streamlined upload function
-      updateCallback({ status: "processing", message: "Μεταφόρτωση αρχείου στο Drive..." });
+      updateCallback({ status: "processing", message: "Μεταφόρτωση αρ��είου στο Drive..." });
       console.log("Attempting streamlined upload to Drive");
       
       try {

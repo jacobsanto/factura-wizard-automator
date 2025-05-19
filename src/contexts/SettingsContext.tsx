@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { UserSettings } from "@/types";
 
@@ -18,6 +19,10 @@ const defaultSettings: UserSettings = {
   aiConfidenceThreshold: 70, // 70% confidence threshold by default
   strictInvoiceCheck: true, // Enable strict invoice verification by default
   pdfOnly: true, // Only process PDF files by default
+  enableDocumentAI: false, // Disable Document AI by default
+  documentAIProcessorId: "", // No processor ID by default
+  documentAILocation: "eu", // EU location by default
+  documentAIPreferredForGreek: false, // Don't prefer Document AI for Greek by default
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);

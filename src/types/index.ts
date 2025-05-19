@@ -65,4 +65,15 @@ export interface UserSettings {
   aiConfidenceThreshold?: number; // Minimum confidence level for AI extraction (0-100)
   strictInvoiceCheck?: boolean; // Whether to strictly verify if files are invoices
   pdfOnly?: boolean; // Whether to only process PDF files
+  enableDocumentAI?: boolean; // Whether to use Google Document AI for extraction
+  documentAIProcessorId?: string; // The Document AI processor ID to use
+  documentAILocation?: string; // Location of Document AI processor (e.g., 'eu', 'us')
+  documentAIPreferredForGreek?: boolean; // Whether to prefer Document AI for Greek invoices
+}
+
+// Add a new interface for extraction results with confidence scoring
+export interface ExtractionResult {
+  data: DocumentData;
+  confidence: number;
+  method: 'gpt' | 'documentAi' | 'pattern';
 }

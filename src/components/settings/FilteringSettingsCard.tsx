@@ -1,19 +1,19 @@
 
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useSettings } from "@/contexts/SettingsContext";
 
 const FilteringSettingsCard: React.FC = () => {
   const { settings, updateSettings } = useSettings();
-  
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Φιλτράρισμα Τιμολογίων</CardTitle>
+        <CardTitle>Φίλτρα Εγγράφων</CardTitle>
         <CardDescription>
-          Ρυθμίσεις για το φιλτράρισμα των τιμολογίων και παραστατικών
+          Ρυθμίσεις για το φιλτράρισμα των εγγράφων προς επεξεργασία
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -26,9 +26,9 @@ const FilteringSettingsCard: React.FC = () => {
           />
         </div>
         <p className="text-sm text-muted-foreground">
-          Όταν είναι ενεργοποιημένο, μόνο αρχεία που αναγνωρίζονται με βεβαιότητα ως τιμολόγια θα επεξεργάζονται
+          Όταν είναι ενεργοποιημένο, μόνο τα αρχεία που αναγνωρίζονται ως τιμολόγια θα επεξεργάζονται αυτόματα.
         </p>
-        
+
         <div className="flex items-center justify-between">
           <Label htmlFor="pdf-only">Μόνο Αρχεία PDF</Label>
           <Switch 
@@ -37,6 +37,9 @@ const FilteringSettingsCard: React.FC = () => {
             onCheckedChange={(checked) => updateSettings({ pdfOnly: checked })}
           />
         </div>
+        <p className="text-sm text-muted-foreground">
+          Όταν είναι ενεργοποιημένο, μόνο τα αρχεία PDF θα επεξεργάζονται, αγνοώντας άλλους τύπους αρχείων.
+        </p>
       </CardContent>
     </Card>
   );
