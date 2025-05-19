@@ -48,6 +48,7 @@ export abstract class BaseExtractor {
 
   /**
    * Extract data from a source
+   * This is the main method that all extractors must implement
    */
   abstract extract(source: any): Promise<DocumentData>;
 }

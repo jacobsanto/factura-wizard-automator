@@ -15,9 +15,10 @@ export class DocumentAiExtractor extends BaseExtractor {
   }
   
   /**
-   * Extract invoice data using Document AI
+   * Extract invoice data using Document AI with confidence scoring
+   * This is an internal method that returns both data and confidence
    */
-  async extract(pdfBlob: Blob): Promise<{ data: DocumentData; confidence: number } | null> {
+  async extractWithConfidence(pdfBlob: Blob): Promise<{ data: DocumentData; confidence: number } | null> {
     console.log("Attempting Document AI extraction");
     
     try {
@@ -50,5 +51,28 @@ export class DocumentAiExtractor extends BaseExtractor {
       console.error("Document AI extraction error:", error);
       return null;
     }
+  }
+  
+  /**
+   * Implementation of the abstract extract method
+   * This is the primary method that follows the BaseExtractor interface
+   */
+  async extract(pdfBlob: Blob): Promise<DocumentData> {
+    const result = await this.extractWithConfidence(pdfBlob);
+    
+    if (result) {
+      return result.data;
+    }
+    
+    // Return a default DocumentData object if extraction fails
+    return {
+      vatNumber: "Unknown",
+      date: new Date().toISOString().split('T')[0],
+      documentNumber: "Unknown",
+      supplier: "Unknown",
+      amount: 0,
+      currency: "€",
+      clientName: "Unknown"
+    };
   }
 }

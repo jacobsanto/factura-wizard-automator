@@ -8,9 +8,10 @@ import { extractInvoiceDataFromPdf } from "@/api/gptApi";
 
 export class GptExtractor extends BaseExtractor {
   /**
-   * Extract invoice data using GPT
+   * Extract invoice data using GPT with confidence scoring
+   * This is an internal method that returns both data and confidence
    */
-  async extract(pdfBlob: Blob): Promise<{ data: DocumentData; confidence: number }> {
+  async extractWithConfidence(pdfBlob: Blob): Promise<{ data: DocumentData; confidence: number }> {
     console.log("Attempting extraction with GPT directly from PDF");
     
     try {
@@ -50,6 +51,28 @@ export class GptExtractor extends BaseExtractor {
     } catch (error) {
       console.warn("GPT extraction failed:", error);
       throw error;
+    }
+  }
+  
+  /**
+   * Implementation of the abstract extract method
+   * This is the primary method that follows the BaseExtractor interface
+   */
+  async extract(pdfBlob: Blob): Promise<DocumentData> {
+    try {
+      const result = await this.extractWithConfidence(pdfBlob);
+      return result.data;
+    } catch (error) {
+      // Return a default DocumentData object if extraction fails
+      return {
+        vatNumber: "Unknown",
+        date: new Date().toISOString().split('T')[0],
+        documentNumber: "Unknown",
+        supplier: "Unknown",
+        amount: 0,
+        currency: "€",
+        clientName: "Unknown"
+      };
     }
   }
 }

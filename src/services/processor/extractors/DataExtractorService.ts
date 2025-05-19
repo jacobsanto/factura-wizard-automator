@@ -36,6 +36,7 @@ export class DataExtractorService extends BaseExtractor {
   /**
    * Extract data from a PDF file using multi-tiered approach
    * with priority on VAT number extraction
+   * (Implementation of the abstract method in BaseExtractor)
    */
   async extract(pdfBlob: Blob): Promise<DocumentData> {
     // This method is required by the BaseExtractor abstract class
