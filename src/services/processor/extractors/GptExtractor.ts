@@ -37,11 +37,38 @@ export class GptExtractor extends BaseExtractor {
           clientName: gptData.clientName
         };
         
-        // Calculate confidence based on language
+        // Calculate confidence based on language and content quality
         const containsGreek = this.containsGreekCharacters(gptData.issuer + gptData.clientName);
         const settings = this.getUserSettings();
         const preferGreekExtraction = settings.preferGreekExtraction !== false;
-        const confidence = containsGreek && !preferGreekExtraction ? 70 : 85;
+        
+        // Adjust confidence scoring based on content completeness and language
+        let confidence = 85; // Base confidence
+        
+        // Document quality factors
+        if (vatNumber.length === 9 && !isNaN(Number(vatNumber))) {
+          confidence += 5; // Valid VAT format
+        }
+        
+        if (gptData.date && gptData.date !== "unknown") {
+          confidence += 3; // Has date
+        }
+        
+        if (gptData.amount && gptData.amount !== "unknown") {
+          confidence += 3; // Has amount
+        }
+        
+        // Language and preference adjustments
+        if (containsGreek) {
+          if (preferGreekExtraction) {
+            confidence += 5; // Preferred language with Greek preference enabled
+          } else {
+            confidence -= 5; // Greek document but preference disabled
+          }
+        }
+        
+        // Cap confidence between 50-95
+        confidence = Math.min(95, Math.max(50, confidence));
         
         return { data: aiResult, confidence };
       }

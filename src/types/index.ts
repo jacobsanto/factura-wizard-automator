@@ -1,4 +1,3 @@
-
 export interface DocumentData {
   vatNumber: string;
   date: string;
@@ -69,6 +68,30 @@ export interface UserSettings {
   documentAIProcessorId?: string; // The Document AI processor ID to use
   documentAILocation?: string; // Location of Document AI processor (e.g., 'eu', 'us')
   documentAIPreferredForGreek?: boolean; // Whether to prefer Document AI for Greek invoices
+}
+
+/**
+ * Extraction feedback data
+ */
+export interface ExtractionFeedback {
+  id?: string;
+  userId?: string;
+  documentId?: string;
+  fileName?: string;
+  extractionMethod: string;
+  confidence: number;
+  originalData: DocumentData;
+  correctedData: DocumentData;
+  fields: {
+    [key: string]: {
+      wasCorrect: boolean;
+      original: string;
+      corrected?: string;
+    }
+  };
+  feedbackDate: string;
+  rating: number; // 1-5 rating
+  comment?: string;
 }
 
 // Add a new interface for extraction results with confidence scoring

@@ -31,28 +31,58 @@ serve(async (req) => {
     console.log("Processing invoice text with OpenAI");
     console.log(`Text length: ${text.length} characters`);
 
+    // Detect if text contains Greek characters to adjust processing
+    const containsGreek = /[\u0370-\u03FF\u1F00-\u1FFF]/.test(text);
+    console.log(`Text language detection: ${containsGreek ? 'Greek' : 'Non-Greek'}`);
+
     // Truncate text if it's too long (OpenAI has token limits)
     const truncatedText = text.length > 15000 ? text.substring(0, 15000) + "..." : text;
     
-    // Use the provided prompt or fall back to default
-    const finalPrompt = prompt || 
-      `Extract the following information from this invoice text. If you can't find a specific field, respond with "unknown" for that field.
-       Return ONLY a JSON object with these keys:
-       - vatNumber (the VAT/Tax ID of the client)
-       - clientName (the name of the client/company receiving the invoice)
-       - issuer (the supplier/vendor issuing the invoice)
-       - date (the invoice date in YYYY-MM-DD format if possible)
-       - documentNumber (the invoice number)
-       - amount (the total amount as a number without currency symbol)
-       - currency (the currency symbol or code, e.g., €, $, EUR, USD)
-       
-       IMPORTANT: 
-       - Greek VAT numbers are 9 digits and often prefixed with "ΑΦΜ" or "ΑΦΜ:"
-       - Dates may be in various formats (e.g., DD/MM/YYYY, DD-MM-YYYY)
-       - Return only the JSON object, no additional text
-       
-       Here's the invoice text:
-       ${truncatedText}`;
+    // Use the provided prompt or build a specialized one based on content
+    let finalPrompt = prompt;
+    
+    if (!finalPrompt) {
+      if (containsGreek) {
+        // Greek specialized prompt with more detailed instructions
+        finalPrompt = `
+          Από το παρακάτω κείμενο τιμολογίου, εξήγαγε τις ακόλουθες πληροφορίες. 
+          Αν δεν μπορείς να βρεις κάποιο πεδίο, απάντησε "unknown" για αυτό.
+          Επίστρεψε ΜΟΝΟ ένα JSON αντικείμενο με τα εξής κλειδιά:
+          - vatNumber (ο ΑΦΜ του πελάτη/λήπτη, συνήθως 9 ψηφία με πρόθεμα "ΑΦΜ")
+          - clientName (το όνομα του πελάτη/εταιρείας που λαμβάνει το τιμολόγιο)
+          - issuer (ο προμηθευτής/εκδότης του τιμολογίου)
+          - date (η ημερομηνία του τιμολογίου σε μορφή YYYY-MM-DD αν είναι δυνατόν)
+          - documentNumber (ο αριθμός του τιμολογίου ή "Αριθμός Παραστατικού")
+          - amount (το συνολικό ποσό ως αριθμός χωρίς σύμβολο νομίσματος)
+          - currency (το σύμβολο ή κωδικός νομίσματος, π.χ., €, $, EUR, USD)
+          
+          ΣΗΜΑΝΤΙΚΕΣ ΟΔΗΓΙΕΣ:
+          - Ο ΑΦΜ είναι 9 ψηφία και συνήθως έχει πρόθεμα "ΑΦΜ:" ή "Α.Φ.Μ."
+          - Για το ποσό, ψάξε για "ΣΥΝΟΛΟ", "ΠΛΗΡΩΤΕΟ ΠΟΣΟ", "ΠΛΗΡΩΜΗ", "ΑΞΙΑ", "ΦΠΑ", "ΣΥΝΟΛΙΚΗ ΑΞΙΑ"
+          - Επίστρεψε ΜΟΝΟ το JSON αντικείμενο, χωρίς άλλο κείμενο ή επεξήγηση
+          
+          Κείμενο τιμολογίου:
+          ${truncatedText}`;
+      } else {
+        // Default prompt for non-Greek invoices
+        finalPrompt = `
+          Extract the following information from this invoice text. If you can't find a specific field, respond with "unknown" for that field.
+          Return ONLY a JSON object with these keys:
+          - vatNumber (the VAT/Tax ID of the client)
+          - clientName (the name of the client/company receiving the invoice)
+          - issuer (the supplier/vendor issuing the invoice)
+          - date (the invoice date in YYYY-MM-DD format if possible)
+          - documentNumber (the invoice number)
+          - amount (the total amount as a number without currency symbol)
+          - currency (the currency symbol or code, e.g., €, $, EUR, USD)
+          
+          IMPORTANT: 
+          - Return only the JSON object, no additional text
+          
+          Here's the invoice text:
+          ${truncatedText}`;
+      }
+    }
 
     // Call OpenAI API
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -69,7 +99,7 @@ serve(async (req) => {
             content: finalPrompt
           }
         ],
-        temperature: 0.2, // Lower temperature for more focused extraction
+        temperature: containsGreek ? 0.3 : 0.2, // Slightly higher temperature for Greek to handle ambiguity
       })
     });
 
@@ -104,6 +134,24 @@ serve(async (req) => {
       const extractedData = JSON.parse(jsonStr.trim());
       console.log("Successfully extracted data:", extractedData);
       
+      // Greek-specific post-processing
+      if (containsGreek) {
+        // Handle typical Greek VAT number formats
+        if (extractedData.vatNumber && extractedData.vatNumber !== "unknown") {
+          extractedData.vatNumber = extractedData.vatNumber.replace(/[^0-9]/g, '');
+          // Ensure it's 9 digits for Greek VAT
+          if (extractedData.vatNumber.length !== 9) {
+            console.log(`Warning: VAT number ${extractedData.vatNumber} is not 9 digits`);
+          }
+        }
+        
+        // Normalize currency for Greek invoices
+        if (extractedData.currency === "ΕΥΡΩ" || extractedData.currency === "ευρώ" || 
+            extractedData.currency === "EUR" || extractedData.currency === "euro") {
+          extractedData.currency = "€";
+        }
+      }
+      
       return new Response(
         JSON.stringify(extractedData),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -119,9 +167,14 @@ serve(async (req) => {
         issuer: extractPattern(content, /["']issuer["']\s*:\s*["']([^"']+)["']/) || "unknown",
         date: extractPattern(content, /["']date["']\s*:\s*["']([^"']+)["']/) || "unknown",
         documentNumber: extractPattern(content, /["']documentNumber["']\s*:\s*["']([^"']+)["']/) || "unknown",
-        amount: extractPattern(content, /["']amount["']\s*:\s*["']([^"']+)["']/) || "unknown",
+        amount: extractPattern(content, /["']amount["']\s*:\s*["']?([^"',]+)["']?/) || "unknown",
         currency: extractPattern(content, /["']currency["']\s*:\s*["']([^"']+)["']/) || "unknown"
       };
+      
+      // Greek-specific post-processing for regex extracted data
+      if (containsGreek && extractedData.vatNumber !== "unknown") {
+        extractedData.vatNumber = extractedData.vatNumber.replace(/[^0-9]/g, '');
+      }
       
       return new Response(
         JSON.stringify(extractedData),

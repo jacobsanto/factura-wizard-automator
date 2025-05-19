@@ -9,6 +9,7 @@ import GoogleSheetsSettingsCard from "./settings/GoogleSheetsSettingsCard";
 import AutoScanSettingsCard from "./settings/AutoScanSettingsCard";
 import NotificationsSettingsCard from "./settings/NotificationsSettingsCard";
 import ResetSettingsCard from "./settings/ResetSettingsCard";
+import ExtractionPerformanceCard from "./settings/ExtractionPerformanceCard";
 
 const SettingsPanel: React.FC = () => {
   const { toast } = useToast();
@@ -32,6 +33,7 @@ const SettingsPanel: React.FC = () => {
         <GoogleSheetsSettingsCard />
         <AutoScanSettingsCard />
         <NotificationsSettingsCard />
+        <ExtractionPerformanceCard />
         <ResetSettingsCard />
       </div>
       
