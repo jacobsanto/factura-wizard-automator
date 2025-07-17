@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { extractInvoiceDataFromPdf } from "@/api/gptApi";
+import { pdfProcessingService } from "@/services/PdfProcessingService";
 import { uploadInvoiceToDrive } from "@/helpers/uploadHelpers";
 import { isDriveReady } from "@/helpers/driveHelpers";
 import { useSupabaseAuth } from "@/contexts/supabase/auth";
@@ -84,7 +84,7 @@ export function useSimpleUpload() {
         description: "Αναλύουμε το PDF σας με AI...",
       });
       
-      const data = await extractInvoiceDataFromPdf(file);
+      const data = await pdfProcessingService.processPdf(file);
       setExtractedData(data);
       
       toast({
@@ -159,7 +159,7 @@ export function useSimpleUpload() {
         });
         
         try {
-          dataToUpload = await extractInvoiceDataFromPdf(file);
+          dataToUpload = await pdfProcessingService.processPdf(file);
           setExtractedData(dataToUpload);
         } catch (error) {
           console.error("PDF extraction error during upload:", error);

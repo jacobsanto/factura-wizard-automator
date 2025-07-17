@@ -8,10 +8,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSettings } from "@/contexts/SettingsContext";
 import { Info } from "lucide-react";
 const AISettingsCard: React.FC = () => {
-  const {
-    settings,
-    updateSettings
-  } = useSettings();
-  return;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>AI Features Removed</CardTitle>
+        <CardDescription>
+          AI-powered extraction features have been removed from this application.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground">
+          The application now uses pattern-based extraction and OCR for document processing.
+        </p>
+      </CardContent>
+    </Card>
+  );
 };
 export default AISettingsCard;

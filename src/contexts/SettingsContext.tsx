@@ -14,15 +14,9 @@ const defaultSettings: UserSettings = {
   notifyEmail: "",
   autoProcessingEnabled: false,
   processingInterval: 30, // 30 minutes default
-  enableAI: true, // Enable AI extraction by default
   preferGreekExtraction: true, // Optimize for Greek invoices by default
-  aiConfidenceThreshold: 70, // 70% confidence threshold by default
   strictInvoiceCheck: true, // Enable strict invoice verification by default
   pdfOnly: true, // Only process PDF files by default
-  enableDocumentAI: false, // Disable Document AI by default
-  documentAIProcessorId: "", // No processor ID by default
-  documentAILocation: "eu", // EU location by default
-  documentAIPreferredForGreek: false, // Don't prefer Document AI for Greek by default
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);

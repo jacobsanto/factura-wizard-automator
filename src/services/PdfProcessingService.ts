@@ -1,5 +1,4 @@
-import { extractTextFromPdf, extractTextFromPdfAdvanced } from "@/utils/pdfUtils";
-import { extractInvoiceDataWithGpt, extractInvoiceDataFromPdf } from "@/api/gptApi";
+import { extractTextFromPdfAdvanced } from "@/utils/pdfUtils";
 
 export interface ProcessedPdfData {
   vatNumber: string;
@@ -12,73 +11,14 @@ export interface ProcessedPdfData {
 }
 
 /**
- * Service for handling PDF processing with multiple extraction methods
+ * Service for handling PDF processing with pattern extraction and OCR
  */
 export class PdfProcessingService {
-  /**
-   * Process PDF with enhanced GPT extraction
-   */
-  async processWithEnhancedGpt(file: File): Promise<ProcessedPdfData | null> {
-    console.log("Processing PDF with enhanced GPT extraction...");
-    try {
-      const extractedData = await extractInvoiceDataFromPdf(file);
-      console.log("Enhanced GPT processing complete", extractedData);
-      
-      if (extractedData && extractedData.vatNumber !== "unknown") {
-        return {
-          vatNumber: extractedData.vatNumber !== "unknown" ? extractedData.vatNumber : "",
-          clientName: extractedData.clientName !== "unknown" ? extractedData.clientName : "",
-          issuer: extractedData.issuer !== "unknown" ? extractedData.issuer : "",
-          documentNumber: extractedData.documentNumber !== "unknown" ? extractedData.documentNumber : "",
-          date: extractedData.date !== "unknown" ? extractedData.date : "",
-          amount: extractedData.amount !== "unknown" ? extractedData.amount : "",
-          currency: extractedData.currency !== "unknown" ? extractedData.currency : "€"
-        };
-      }
-      
-      console.log("Enhanced GPT extraction didn't provide sufficient data");
-      return null;
-    } catch (error) {
-      console.warn("Enhanced GPT extraction failed:", error);
-      return null;
-    }
-  }
-
-  /**
-   * Process PDF with legacy GPT extraction
-   */
-  async processWithLegacyGpt(file: File): Promise<ProcessedPdfData | null> {
-    console.log("Trying legacy GPT extraction...");
-    try {
-      const pdfText = await extractTextFromPdf(file);
-      const extractedData = await extractInvoiceDataWithGpt(pdfText);
-      console.log("Legacy GPT processing complete", extractedData);
-      
-      if (extractedData && extractedData.vatNumber !== "unknown") {
-        return {
-          vatNumber: extractedData.vatNumber !== "unknown" ? extractedData.vatNumber : "",
-          clientName: extractedData.clientName !== "unknown" ? extractedData.clientName : "",
-          issuer: extractedData.issuer !== "unknown" ? extractedData.issuer : "",
-          documentNumber: extractedData.documentNumber !== "unknown" ? extractedData.documentNumber : "",
-          date: extractedData.date !== "unknown" ? extractedData.date : "",
-          amount: extractedData.amount !== "unknown" ? extractedData.amount : "",
-          currency: extractedData.currency !== "unknown" ? extractedData.currency : "€"
-        };
-      }
-      
-      console.log("Legacy GPT extraction didn't provide sufficient data");
-      return null;
-    } catch (error) {
-      console.warn("Legacy GPT extraction failed:", error);
-      return null;
-    }
-  }
-
   /**
    * Process PDF with advanced OCR and pattern matching
    */
   async processWithAdvancedOcr(file: File): Promise<ProcessedPdfData> {
-    console.log("Falling back to advanced extraction with OCR...");
+    console.log("Processing PDF with advanced extraction and OCR...");
     const extractedText = await extractTextFromPdfAdvanced(file);
     console.log("Advanced text extraction complete", {
       textLength: extractedText.length,
@@ -111,26 +51,12 @@ export class PdfProcessingService {
   }
 
   /**
-   * Process PDF using all available methods in order of preference
+   * Process PDF using pattern extraction and OCR
    */
   async processPdf(file: File): Promise<ProcessedPdfData | null> {
     console.log("Starting PDF parsing", { fileName: file.name });
     
-    // Try enhanced GPT first
-    const enhancedResult = await this.processWithEnhancedGpt(file);
-    if (enhancedResult) {
-      console.log("Setting extracted data from enhanced GPT", enhancedResult);
-      return enhancedResult;
-    }
-    
-    // Try legacy GPT
-    const legacyResult = await this.processWithLegacyGpt(file);
-    if (legacyResult) {
-      console.log("Setting extracted data from legacy GPT", legacyResult);
-      return legacyResult;
-    }
-    
-    // Fall back to advanced OCR
+    // Use advanced OCR and pattern matching
     const ocrResult = await this.processWithAdvancedOcr(file);
     console.log("Setting extracted data from patterns", ocrResult);
     return ocrResult;
