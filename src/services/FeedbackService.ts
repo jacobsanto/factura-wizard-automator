@@ -31,15 +31,9 @@ export class FeedbackService {
       // Try to submit to backend if available
       try {
         if (supabase) {
-          const { error } = await supabase
-            .from('extraction_feedback')
-            .insert([feedback]);
-            
-          if (error) {
-            console.warn("Error submitting feedback to backend:", error);
-          } else {
-            console.log("Feedback submitted to backend successfully");
-          }
+          // For now, just log that we would submit to backend
+          // In the future, we could create an extraction_feedback table
+          console.log("Backend submission would happen here if table existed");
         }
       } catch (e) {
         console.warn("Backend submission failed, feedback stored locally only:", e);

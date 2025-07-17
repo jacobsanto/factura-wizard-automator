@@ -21,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { DocumentData, ExtractionFeedback } from "@/types";
+import { DocumentData, ExtractionFeedback as ExtractionFeedbackType } from "@/types";
 import { Star, StarOff } from "lucide-react";
 import { useForm } from "react-hook-form";
 
@@ -30,7 +30,7 @@ interface ExtractionFeedbackProps {
   fileName: string;
   extractionMethod: string;
   confidence: number;
-  onSubmit: (feedback: ExtractionFeedback) => void;
+  onSubmit: (feedback: ExtractionFeedbackType) => void;
   onCancel: () => void;
 }
 
@@ -70,7 +70,7 @@ const ExtractionFeedback: React.FC<ExtractionFeedbackProps> = ({
 
   const handleSubmit = form.handleSubmit((data) => {
     // Compare original data with corrected data to build feedback
-    const fields: ExtractionFeedback['fields'] = {};
+    const fields: ExtractionFeedbackType['fields'] = {};
     const correctedData: DocumentData = {
       vatNumber: data.vatNumber,
       clientName: data.clientName,
@@ -99,7 +99,7 @@ const ExtractionFeedback: React.FC<ExtractionFeedbackProps> = ({
     });
     
     // Build feedback object
-    const feedback: ExtractionFeedback = {
+    const feedback: ExtractionFeedbackType = {
       fileName,
       extractionMethod,
       confidence,

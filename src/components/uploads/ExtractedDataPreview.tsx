@@ -8,7 +8,7 @@ import { feedbackService } from "@/services/FeedbackService";
 import { useToast } from "@/hooks/use-toast";
 
 interface ExtractedDataPreviewProps {
-  data: {
+  extractedData: {
     clientVat: string;
     clientName: string;
     issuer: string;
@@ -20,23 +20,23 @@ interface ExtractedDataPreviewProps {
   fileName?: string;
 }
 
-const ExtractedDataPreview: React.FC<ExtractedDataPreviewProps> = ({ data, fileName = "Unknown" }) => {
+const ExtractedDataPreview: React.FC<ExtractedDataPreviewProps> = ({ extractedData, fileName = "Unknown" }) => {
   const [showFeedback, setShowFeedback] = useState(false);
   const { toast } = useToast();
 
-  if (!data) {
+  if (!extractedData) {
     return null;
   }
   
   // Convert to DocumentData format
   const documentData: DocumentData = {
-    vatNumber: data.clientVat || "Unknown",
-    clientName: data.clientName || "Unknown",
-    supplier: data.issuer || "Unknown",
-    documentNumber: data.invoiceNumber || "Unknown",
-    date: data.date || new Date().toISOString().split('T')[0],
-    amount: parseFloat(data.amount) || 0,
-    currency: data.currency || "€",
+    vatNumber: extractedData.clientVat || "Unknown",
+    clientName: extractedData.clientName || "Unknown",
+    supplier: extractedData.issuer || "Unknown",
+    documentNumber: extractedData.invoiceNumber || "Unknown",
+    date: extractedData.date || new Date().toISOString().split('T')[0],
+    amount: parseFloat(extractedData.amount) || 0,
+    currency: extractedData.currency || "€",
   };
 
   const handleProvideFeedback = () => {
@@ -83,22 +83,22 @@ const ExtractedDataPreview: React.FC<ExtractedDataPreviewProps> = ({ data, fileN
       <CardContent>
         <div className="grid grid-cols-2 gap-y-2 text-sm">
           <div className="font-medium text-gray-500">ΑΦΜ Πελάτη</div>
-          <div className="text-right">{data.clientVat || "-"}</div>
+          <div className="text-right">{extractedData.clientVat || "-"}</div>
           
           <div className="font-medium text-gray-500">Όνομα Πελάτη</div>
-          <div className="text-right">{data.clientName || "-"}</div>
+          <div className="text-right">{extractedData.clientName || "-"}</div>
           
           <div className="font-medium text-gray-500">Προμηθευτής</div>
-          <div className="text-right">{data.issuer || "-"}</div>
+          <div className="text-right">{extractedData.issuer || "-"}</div>
           
           <div className="font-medium text-gray-500">Αριθμός Τιμολογίου</div>
-          <div className="text-right">{data.invoiceNumber || "-"}</div>
+          <div className="text-right">{extractedData.invoiceNumber || "-"}</div>
           
           <div className="font-medium text-gray-500">Ημερομηνία</div>
-          <div className="text-right">{data.date || "-"}</div>
+          <div className="text-right">{extractedData.date || "-"}</div>
           
           <div className="font-medium text-gray-500">Ποσό</div>
-          <div className="text-right">{data.amount ? `${data.amount} ${data.currency}` : "-"}</div>
+          <div className="text-right">{extractedData.amount ? `${extractedData.amount} ${extractedData.currency}` : "-"}</div>
         </div>
         
         <div className="mt-4 text-center">
