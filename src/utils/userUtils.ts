@@ -3,9 +3,6 @@
  * User information utilities
  */
 
-import { supabase } from "@/integrations/supabase/client";
-import { User } from "@supabase/supabase-js";
-
 export interface UserInfo {
   id?: string;
   email: string;
@@ -14,28 +11,10 @@ export interface UserInfo {
 }
 
 /**
- * Get the current user's information from Supabase
+ * Get the current user's information from localStorage
  */
 export const getCurrentUser = async (): Promise<UserInfo | null> => {
   try {
-    // First check if there's a current Supabase session
-    const { data, error } = await supabase.auth.getUser();
-    if (error) {
-      console.error("Error getting current user:", error);
-      return null;
-    }
-    
-    if (data?.user) {
-      const userData = data.user;
-      return {
-        id: userData.id,
-        email: userData.email || "No email",
-        name: userData.user_metadata?.name || userData.email || "User",
-        picture: userData.user_metadata?.avatar_url
-      };
-    }
-    
-    // Fallback to checking localStorage
     const userStr = localStorage.getItem("user");
     if (userStr) {
       return JSON.parse(userStr);
@@ -60,8 +39,7 @@ export const getUserStorageKey = (baseKey: string): string => {
 };
 
 /**
- * Synchronous version of getCurrentUser that returns null if user isn't available in localStorage
- * This should be used when you need a synchronous result and can't use async/await
+ * Synchronous version of getCurrentUser
  */
 export const getCurrentUserSync = (): UserInfo | null => {
   try {

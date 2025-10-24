@@ -3,7 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import { pdfProcessingService } from "@/services/PdfProcessingService";
 import { uploadInvoiceToDrive } from "@/helpers/uploadHelpers";
 import { isDriveReady } from "@/helpers/driveHelpers";
-import { useSupabaseAuth } from "@/contexts/supabase/auth";
+import useDriveAuth from "@/hooks/useDriveAuth";
 
 type UploadStatusType = "success" | "error" | null;
 
@@ -25,7 +25,7 @@ export function useSimpleUpload() {
   const [isDriveAuthenticated, setIsDriveAuthenticated] = useState<boolean | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { toast } = useToast();
-  const { isAuthenticated } = useSupabaseAuth();
+  const { isAuthenticated } = useDriveAuth();
   
   // Check if Drive is authenticated when component mounts
   useEffect(() => {

@@ -7,20 +7,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FormContainer from "@/components/uploads/FormContainer";
 import AuthAlert from "@/components/uploads/AuthAlert";
 import ErrorAlert from "@/components/uploads/ErrorAlert";
-import { useSupabaseAuth } from "@/contexts/supabase/auth";
+import useDriveAuth from "@/hooks/useDriveAuth";
 import { EnhancedDriveService } from "@/services/drive";
 
 const DashboardUploadSection: React.FC = () => {
   const [isGoogleAuthenticated, setIsGoogleAuthenticated] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploadType, setUploadType] = useState<"simple" | "advanced">("simple");
-  const { session } = useSupabaseAuth();
+  const { isAuthenticated } = useDriveAuth();
 
   useEffect(() => {
     const checkGoogleAuth = async () => {
       try {
-        // Check if we have Google auth via Supabase session
-        if (!session?.provider_token) {
+        const hasTokens = !!localStorage.getItem("google_tokens");
+        if (!hasTokens) {
           setIsGoogleAuthenticated(false);
           return;
         }
@@ -37,8 +37,10 @@ const DashboardUploadSection: React.FC = () => {
       }
     };
     
-    checkGoogleAuth();
-  }, [session]);
+    if (isAuthenticated) {
+      checkGoogleAuth();
+    }
+  }, [isAuthenticated]);
 
   const handleClearError = () => {
     setError(null);

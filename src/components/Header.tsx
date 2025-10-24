@@ -1,25 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { useSupabaseAuth } from "@/contexts/supabase/auth";
 import { useDevMode } from "@/contexts/DevModeContext";
+import useDriveAuth from "@/hooks/useDriveAuth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem } from "@/components/ui/navigation-menu";
-import { LogOut, Settings, HelpCircle, Home, Upload, ToggleLeft, ToggleRight, Mail } from "lucide-react";
+import { LogOut, Settings, HelpCircle, Upload, ToggleLeft, ToggleRight, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, UserInfo } from "@/utils/userUtils";
 
 const Header: React.FC = () => {
-  const {
-    isAuthenticated,
-    user,
-    session,
-    signOut
-  } = useSupabaseAuth();
-  const {
-    isDevMode,
-    toggleDevMode
-  } = useDevMode();
+  const { isAuthenticated, handleSignOut } = useDriveAuth();
+  const { isDevMode, toggleDevMode } = useDevMode();
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<UserInfo | null>(null);
   const [hasGoogleAuth, setHasGoogleAuth] = useState<boolean>(false);
@@ -31,10 +23,10 @@ const Header: React.FC = () => {
     };
     if (isAuthenticated) {
       fetchUser();
-      // Check if user has Google auth from Supabase session
-      setHasGoogleAuth(!!session?.provider_token);
+      const tokens = localStorage.getItem("google_tokens");
+      setHasGoogleAuth(!!tokens);
     }
-  }, [isAuthenticated, user, session]);
+  }, [isAuthenticated]);
   
   const handleNavigate = (tab: string) => {
     navigate(`/?tab=${tab}`);
@@ -44,10 +36,8 @@ const Header: React.FC = () => {
     navigate('/?tab=settings');
   };
 
-  // Use either the currentUser or create a basic user object if not available
   const displayUser: UserInfo = currentUser || {
-    id: user?.id,
-    email: user?.email || "user@example.com",
+    email: "user@example.com",
     name: "User"
   };
   
@@ -113,7 +103,7 @@ const Header: React.FC = () => {
                     <span>Ρυθμίσεις</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => signOut()} className="text-red-500 cursor-pointer">
+                  <DropdownMenuItem onClick={() => handleSignOut()} className="text-red-500 cursor-pointer">
                     <LogOut className="h-4 w-4 mr-2" />
                     <span>Αποσύνδεση</span>
                   </DropdownMenuItem>

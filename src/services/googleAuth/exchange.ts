@@ -2,8 +2,7 @@
 /**
  * Exchange code for tokens with Google OAuth
  */
-import { supabase } from "@/integrations/supabase/client";
-import { GOOGLE_REDIRECT_URI } from "@/env";
+import { GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URI } from "@/env";
 import { GoogleTokens } from "./types";
 import { storeTokens } from "./storage";
 
@@ -13,7 +12,7 @@ export const getGoogleAuthUrl = (): string => {
   
   const options = {
     redirect_uri: GOOGLE_REDIRECT_URI,
-    client_id: "467372877930-o2pfcrfugeh1c4h5gvo2at9um6grq7eg.apps.googleusercontent.com",
+    client_id: GOOGLE_CLIENT_ID,
     access_type: "offline",
     response_type: "code",
     prompt: "consent",
@@ -31,26 +30,22 @@ export const getGoogleAuthUrl = (): string => {
   return `${rootUrl}?${queryString}`;
 };
 
-// Exchange authorization code for tokens
+// Exchange authorization code for tokens directly with Google
 export const exchangeCodeForTokens = async (code: string): Promise<GoogleTokens | null> => {
-  console.log("Exchanging code for tokens using Supabase Edge Function...");
+  console.log("Exchanging code for tokens directly with Google...");
   
   try {
-    const { data: authData } = await supabase.auth.getSession();
-    const accessToken = authData.session?.access_token;
-    
-    if (!accessToken) {
-      console.error("No Supabase session available for code exchange");
-      return null;
-    }
-    
-    const response = await fetch("/api/google-oauth", {
+    const response = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: JSON.stringify({ code }),
+      body: new URLSearchParams({
+        code,
+        client_id: GOOGLE_CLIENT_ID,
+        redirect_uri: GOOGLE_REDIRECT_URI,
+        grant_type: "authorization_code",
+      }),
     });
     
     if (!response.ok) {
@@ -64,11 +59,10 @@ export const exchangeCodeForTokens = async (code: string): Promise<GoogleTokens 
     const tokens: GoogleTokens = {
       access_token: data.access_token,
       refresh_token: data.refresh_token,
-      expiry_date: data.expiry_date,
+      expiry_date: Date.now() + (data.expires_in * 1000),
       token_type: "Bearer"
     };
     
-    // Store tokens in both local storage and database
     await storeTokens(tokens);
     return tokens;
   } catch (error) {

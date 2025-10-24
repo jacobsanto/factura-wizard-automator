@@ -5,7 +5,7 @@ import EmailList from "../EmailList";
 import DashboardButton from "./DashboardButton";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { useSupabaseAuth } from "@/contexts/supabase/auth";
+import useDriveAuth from "@/hooks/useDriveAuth";
 
 interface DashboardEmailSectionProps {
   emails: EmailData[];
@@ -20,9 +20,10 @@ const DashboardEmailSection: React.FC<DashboardEmailSectionProps> = ({
   fetchEmails, 
   isLoading 
 }) => {
+  const { isAuthenticated } = useDriveAuth();
   const [fetchError, setFetchError] = useState<string | null>(null);
   const { toast } = useToast();
-  const { hasGoogleAccess } = useSupabaseAuth();
+  const hasGoogleAccess = !!localStorage.getItem("google_tokens");
   
   const handleFetchEmails = async () => {
     setFetchError(null);

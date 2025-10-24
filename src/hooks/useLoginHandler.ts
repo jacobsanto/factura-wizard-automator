@@ -1,15 +1,15 @@
 
 import { useState, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { useSupabaseAuth } from "@/contexts/supabase/auth";
+import { getGoogleAuthUrl } from "@/services/googleAuth";
 
 export function useLoginHandler() {
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const { signInWithGoogle } = useSupabaseAuth();
   
   const logStep = useCallback((step: string) => {
     console.log(`Login: ${step}`);
@@ -33,8 +33,9 @@ export function useLoginHandler() {
     setAuthError(null);
     
     try {
-      logStep("Initiating Google sign-in flow with Supabase...");
-      signInWithGoogle().finally(() => setIsLoading(false));
+      logStep("Initiating Google sign-in flow...");
+      const authUrl = getGoogleAuthUrl();
+      window.location.href = authUrl;
     } catch (error) {
       const errorMessage = error instanceof Error 
         ? error.message 
@@ -50,7 +51,7 @@ export function useLoginHandler() {
         description: "Προέκυψε σφάλμα κατά τη σύνδεση. Παρακαλώ δοκιμάστε ξανά."
       });
     }
-  }, [location.pathname, toast, logStep, signInWithGoogle]);
+  }, [location.pathname, toast, logStep]);
   
   const testGoogleConnection = useCallback(() => {
     setAuthError(null);

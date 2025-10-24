@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { feedbackService } from "@/services/FeedbackService";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface MethodPerformance {
@@ -18,9 +17,15 @@ const ExtractionPerformanceCard: React.FC = () => {
   const [activeTab, setActiveTab] = useState("summary");
 
   useEffect(() => {
-    // Load performance data
-    const data = feedbackService.getExtractionPerformance();
-    setPerformance(data);
+    // Load performance data from localStorage
+    try {
+      const data = localStorage.getItem('extraction_performance');
+      if (data) {
+        setPerformance(JSON.parse(data));
+      }
+    } catch (error) {
+      console.error("Error loading performance data:", error);
+    }
   }, []);
 
   const methodNames: Record<string, string> = {

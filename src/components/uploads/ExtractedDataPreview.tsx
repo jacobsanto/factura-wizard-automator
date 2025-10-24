@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import ExtractionFeedback from "./ExtractionFeedback";
 import { DocumentData, ExtractionFeedback as ExtractionFeedbackType } from "@/types";
-import { feedbackService } from "@/services/FeedbackService";
 import { useToast } from "@/hooks/use-toast";
 
 interface ExtractedDataPreviewProps {
@@ -45,7 +44,14 @@ const ExtractedDataPreview: React.FC<ExtractedDataPreviewProps> = ({ extractedDa
 
   const handleSubmitFeedback = async (feedback: ExtractionFeedbackType) => {
     try {
-      await feedbackService.submitFeedback(feedback);
+      // Store feedback in localStorage
+      const storedFeedback = JSON.parse(localStorage.getItem('extraction_feedback') || '[]');
+      storedFeedback.push({
+        ...feedback,
+        timestamp: new Date().toISOString()
+      });
+      localStorage.setItem('extraction_feedback', JSON.stringify(storedFeedback));
+      
       toast({
         title: "Ευχαριστούμε!",
         description: "Η αναπληροφόρησή σας καταγράφηκε με επιτυχία.",

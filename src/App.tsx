@@ -2,7 +2,6 @@
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
-import { SupabaseAuthProvider } from "@/contexts/supabase/auth";
 import { DevModeProvider } from "@/contexts/DevModeContext";
 import Index from "@/pages/Index";
 import Home from "@/pages/Home";
@@ -23,18 +22,16 @@ const ScrollToTop = () => {
 function App() {
   return (
     <DevModeProvider>
-      <SupabaseAuthProvider>
-        <Router>
-          <ScrollToTop />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/home" element={<Home />} />
-            <Route path="/oauth2callback" element={<GoogleAuthCallback />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <Toaster />
-        </Router>
-      </SupabaseAuthProvider>
+      <Router>
+        <ScrollToTop />
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/oauth2callback" element={<GoogleAuthCallback />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <Toaster />
+      </Router>
     </DevModeProvider>
   );
 }
