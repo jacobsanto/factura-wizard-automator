@@ -2,7 +2,7 @@
 import { useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { getGoogleAuthUrl } from "@/services/googleAuth";
+import { requestGoogleToken, waitForGoogleIdentityServices } from "@/services/googleAuth";
 
 export function useLoginHandler() {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,26 +16,31 @@ export function useLoginHandler() {
     return step;
   }, []);
 
-  const handleSignIn = useCallback(() => {
-    // Only proceed if we're not coming from the oauth callback
-    if (location.pathname === "/oauth2callback") {
-      logStep("Preventing sign-in redirect loop from OAuth callback");
-      toast({
-        variant: "destructive",
-        title: "Προσοχή",
-        description: "Αποτροπή βρόχου ανακατεύθυνσης. Παρακαλώ περιμένετε."
-      });
-      return;
-    }
-    
+  const handleSignIn = useCallback(async () => {
     setIsLoading(true);
     logStep(`Sign in button clicked at ${new Date().toISOString()}`);
     setAuthError(null);
     
     try {
-      logStep("Initiating Google sign-in flow...");
-      const authUrl = getGoogleAuthUrl();
-      window.location.href = authUrl;
+      logStep("Waiting for Google Identity Services to load...");
+      await waitForGoogleIdentityServices();
+      
+      logStep("Requesting Google access token...");
+      const tokens = await requestGoogleToken();
+      
+      logStep("Access token received successfully");
+      console.log("Token expiry:", new Date(tokens.expiry_date || 0).toISOString());
+      
+      toast({
+        title: "Επιτυχής σύνδεση",
+        description: "Έχετε συνδεθεί επιτυχώς με το Google."
+      });
+      
+      // Navigate to home page
+      setTimeout(() => {
+        navigate('/home');
+      }, 500);
+      
     } catch (error) {
       const errorMessage = error instanceof Error 
         ? error.message 
@@ -43,15 +48,16 @@ export function useLoginHandler() {
         
       logStep(`Error during sign-in: ${errorMessage}`);
       setAuthError(`Sign-in error: ${errorMessage}`);
-      setIsLoading(false);
       
       toast({
         variant: "destructive",
         title: "Σφάλμα",
         description: "Προέκυψε σφάλμα κατά τη σύνδεση. Παρακαλώ δοκιμάστε ξανά."
       });
+    } finally {
+      setIsLoading(false);
     }
-  }, [location.pathname, toast, logStep]);
+  }, [toast, logStep, navigate]);
   
   const testGoogleConnection = useCallback(() => {
     setAuthError(null);

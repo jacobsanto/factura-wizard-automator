@@ -6,6 +6,7 @@ import { getStoredTokens, storeTokens, clearTokens } from "./storage";
 import { GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URI } from "@/env";
 
 // Get a fresh access token (using refresh token if needed)
+// Note: GIS tokens don't have refresh tokens, so user must re-authenticate when expired
 export const getValidAccessToken = async (): Promise<string | null> => {
   const tokens = await getStoredTokens();
   
@@ -14,30 +15,16 @@ export const getValidAccessToken = async (): Promise<string | null> => {
     return null;
   }
   
-  // If token is still valid, return it
-  if (tokens.expiry_date && tokens.expiry_date > Date.now() + 60000) {
+  // If token is still valid, return it (with 5 minute buffer)
+  if (tokens.expiry_date && tokens.expiry_date > Date.now() + 300000) {
     return tokens.access_token;
   }
   
-  console.log("Token expired or will expire soon, refreshing...");
+  console.log("Token expired or will expire soon");
   
-  // Token is expired or will expire soon, refresh it
-  if (tokens.refresh_token) {
-    try {
-      const newTokens = await refreshAccessToken(tokens.refresh_token);
-      if (newTokens && newTokens.access_token) {
-        return newTokens.access_token;
-      } else {
-        console.error("Failed to refresh token - invalid response");
-        return null;
-      }
-    } catch (error) {
-      console.error("Error refreshing token:", error);
-      return null;
-    }
-  }
-  
-  console.error("No refresh token available");
+  // GIS tokens don't have refresh tokens in browser context
+  // Clear expired tokens and return null to trigger re-authentication
+  await clearTokens();
   return null;
 };
 
