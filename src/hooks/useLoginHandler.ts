@@ -36,9 +36,9 @@ export function useLoginHandler() {
         description: "Έχετε συνδεθεί επιτυχώς με το Google."
       });
       
-      // Navigate to home page
+      // Navigate to dashboard
       setTimeout(() => {
-        navigate('/home');
+        navigate('/');
       }, 500);
       
     } catch (error) {

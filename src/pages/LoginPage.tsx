@@ -9,9 +9,9 @@ const LoginPage: React.FC = () => {
   const { isAuthenticated, isLoading } = useDriveAuth();
   const { isDevMode } = useDevMode();
 
-  // If already authenticated or in dev mode, redirect to home
+  // If already authenticated or in dev mode, redirect to dashboard
   if (!isLoading && (isAuthenticated || isDevMode)) {
-    return <Navigate to="/home" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <Login />;
