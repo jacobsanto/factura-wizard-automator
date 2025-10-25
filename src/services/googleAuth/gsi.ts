@@ -60,45 +60,72 @@ export const requestGoogleToken = (): Promise<GoogleTokens> => {
   return new Promise((resolve, reject) => {
     // Check if Google Identity Services is loaded
     if (!window.google?.accounts?.oauth2) {
-      reject(new Error("Google Identity Services not loaded"));
+      console.error("GIS Error: Google Identity Services not loaded");
+      reject(new Error("Google Identity Services failed to load. Please refresh the page and try again."));
       return;
     }
 
-    console.log("Initializing Google Identity Services token client...");
+    console.log("GIS: Initializing Google Identity Services token client...");
+    console.log("GIS: Client ID:", GOOGLE_CLIENT_ID);
+    console.log("GIS: Scopes:", SCOPES);
 
-    // Create token client
-    const tokenClient = window.google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID,
-      scope: SCOPES,
-      callback: async (response: TokenResponse) => {
-        if (response.error) {
-          console.error("Token request failed:", response.error, response.error_description);
-          reject(new Error(response.error_description || response.error));
-          return;
+    try {
+      // Create token client
+      const tokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: SCOPES,
+        callback: async (response: TokenResponse) => {
+          if (response.error) {
+            console.error("GIS Token Error:", response.error, response.error_description);
+            
+            // Provide user-friendly error messages
+            let errorMessage = "Authentication failed";
+            if (response.error === 'popup_closed_by_user') {
+              errorMessage = "Sign-in popup was closed. Please try again.";
+            } else if (response.error === 'access_denied') {
+              errorMessage = "Access was denied. Please grant the required permissions.";
+            } else if (response.error_description) {
+              errorMessage = response.error_description;
+            }
+            
+            reject(new Error(errorMessage));
+            return;
+          }
+
+          console.log("GIS: Access token received successfully");
+          console.log("GIS: Token expires in", response.expires_in, "seconds");
+          
+          const tokens: GoogleTokens = {
+            access_token: response.access_token,
+            refresh_token: "", // GIS doesn't provide refresh tokens in browser
+            expiry_date: Date.now() + (response.expires_in * 1000),
+            token_type: response.token_type || "Bearer",
+            expires_in: response.expires_in
+          };
+
+          const stored = await storeTokens(tokens);
+          if (!stored) {
+            reject(new Error("Failed to store authentication tokens"));
+            return;
+          }
+          
+          console.log("GIS: Tokens stored successfully");
+          resolve(tokens);
+        },
+        error_callback: (error: ErrorResponse) => {
+          console.error("GIS Error Callback:", error);
+          reject(new Error(error.message || "Token request failed"));
         }
+      });
 
-        console.log("Access token received successfully");
-        
-        const tokens: GoogleTokens = {
-          access_token: response.access_token,
-          refresh_token: "", // GIS doesn't provide refresh tokens in browser
-          expiry_date: Date.now() + (response.expires_in * 1000),
-          token_type: response.token_type || "Bearer",
-          expires_in: response.expires_in
-        };
-
-        await storeTokens(tokens);
-        resolve(tokens);
-      },
-      error_callback: (error: ErrorResponse) => {
-        console.error("Token client error:", error);
-        reject(new Error(error.message || "Token request failed"));
-      }
-    });
-
-    // Request access token with consent prompt
-    console.log("Requesting access token...");
-    tokenClient.requestAccessToken({ prompt: "consent" });
+      // Request access token with consent prompt
+      console.log("GIS: Requesting access token with consent prompt...");
+      tokenClient.requestAccessToken({ prompt: "consent" });
+      
+    } catch (error) {
+      console.error("GIS Initialization Error:", error);
+      reject(new Error("Failed to initialize Google sign-in. Please try again."));
+    }
   });
 };
 
@@ -114,23 +141,29 @@ export const isGoogleIdentityServicesLoaded = (): boolean => {
  */
 export const waitForGoogleIdentityServices = (): Promise<void> => {
   return new Promise((resolve, reject) => {
+    console.log("GIS: Checking if Google Identity Services is loaded...");
+    
     if (isGoogleIdentityServicesLoaded()) {
+      console.log("GIS: Already loaded");
       resolve();
       return;
     }
 
+    console.log("GIS: Waiting for script to load...");
     let attempts = 0;
-    const maxAttempts = 50; // 5 seconds max wait
+    const maxAttempts = 100; // 10 seconds max wait
     
     const checkInterval = setInterval(() => {
       attempts++;
       
       if (isGoogleIdentityServicesLoaded()) {
         clearInterval(checkInterval);
+        console.log(`GIS: Loaded successfully after ${attempts * 100}ms`);
         resolve();
       } else if (attempts >= maxAttempts) {
         clearInterval(checkInterval);
-        reject(new Error("Google Identity Services failed to load"));
+        console.error("GIS: Failed to load after 10 seconds");
+        reject(new Error("Google Identity Services failed to load. Please check your internet connection and refresh the page."));
       }
     }, 100);
   });

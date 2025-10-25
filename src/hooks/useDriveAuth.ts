@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { getValidAccessToken, checkAndFixAuthState, forceResetAuthState } from "@/services/google";
+import { getValidAccessToken, checkAndFixAuthState, forceResetAuthState, getStoredTokens } from "@/services/google";
 import { isDriveReady } from "@/helpers/driveHelpers";
 import { useToast } from "@/hooks/use-toast";
 
@@ -60,15 +60,48 @@ export const useDriveAuth = () => {
   
   const handleSignOut = async () => {
     try {
+      console.log("Logout: Starting sign-out process...");
+      
+      // Revoke Google access token if we have one
+      const tokens = await getStoredTokens();
+      if (tokens?.access_token) {
+        try {
+          console.log("Logout: Revoking Google access token...");
+          await fetch(`https://oauth2.googleapis.com/revoke?token=${tokens.access_token}`, {
+            method: 'POST',
+            headers: {
+              'Content-type': 'application/x-www-form-urlencoded'
+            }
+          });
+          console.log("Logout: Token revoked successfully");
+        } catch (revokeError) {
+          console.error("Logout: Failed to revoke token:", revokeError);
+          // Continue with logout even if revocation fails
+        }
+      }
+      
+      // Clear all local storage
       await forceResetAuthState();
       setIsAuthenticated(false);
+      
       toast({
         title: "Αποσύνδεση",
-        description: "Αποσυνδεθήκατε από το Google Drive",
+        description: "Αποσυνδεθήκατε επιτυχώς",
       });
+      
+      // Navigate to login page after a short delay
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 500);
+      
     } catch (error) {
-      console.error("Error signing out from Drive:", error);
-      setAuthError("Σφάλμα κατά την αποσύνδεση από το Google Drive");
+      console.error("Logout: Error during sign-out:", error);
+      setAuthError("Σφάλμα κατά την αποσύνδεση");
+      toast({
+        variant: "destructive",
+        title: "Σφάλμα",
+        description: "Προέκυψε σφάλμα κατά την αποσύνδεση",
+      });
     }
   };
   

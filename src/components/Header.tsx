@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem } from "@/components/ui/navigation-menu";
-import { LogOut, Settings, HelpCircle, Upload, ToggleLeft, ToggleRight, Mail } from "lucide-react";
+import { LogOut, Settings, HelpCircle, Upload, ToggleLeft, ToggleRight, Mail, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, UserInfo } from "@/utils/userUtils";
 
@@ -79,6 +79,11 @@ const Header: React.FC = () => {
                   </NavigationMenuItem>
                 </NavigationMenuList>
               </NavigationMenu>
+              
+              <Button variant="outline" size="sm" className="text-brand-blue" onClick={() => navigate('/status')}>
+                <Activity className="h-4 w-4 mr-2" />
+                Status
+              </Button>
               
               <Button variant="outline" size="sm" className="text-brand-blue">
                 <HelpCircle className="h-4 w-4 mr-2" />

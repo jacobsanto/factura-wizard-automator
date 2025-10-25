@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from "react";
+import { Navigate } from "react-router-dom";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { useDevMode } from "@/contexts/DevModeContext";
 import useDriveAuth from "@/hooks/useDriveAuth";
 import Header from "@/components/Header";
-import Login from "@/components/Login";
 import Dashboard from "@/components/Dashboard";
 import { forceResetAuthState } from "@/services/google";
 
@@ -95,30 +95,26 @@ const AppContent: React.FC = () => {
     );
   }
 
-  // Check if dev mode is enabled OR user is authenticated
-  const showMainApp = isDevMode || isAuthenticated;
+  // If not authenticated and not in dev mode, redirect to login
+  if (!isAuthenticated && !isDevMode) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      {showMainApp ? (
-        <>
-          <Header />
-          <main className="flex-grow">
-            <Dashboard />
-          </main>
-          <footer className="py-4 px-6 border-t text-center text-sm text-gray-500">
-            © {new Date().getFullYear()} Arivia Group - Αυτοματισμός Παραστατικών
-            {isDevMode && (
-              <span className="ml-2 inline-flex items-center">
-                <span className="h-2 w-2 rounded-full mr-1 bg-amber-500"></span>
-                Development Mode
-              </span>
-            )}
-          </footer>
-        </>
-      ) : (
-        <Login />
-      )}
+      <Header />
+      <main className="flex-grow">
+        <Dashboard />
+      </main>
+      <footer className="py-4 px-6 border-t text-center text-sm text-gray-500">
+        © {new Date().getFullYear()} Arivia Group - Αυτοματισμός Παραστατικών
+        {isDevMode && (
+          <span className="ml-2 inline-flex items-center">
+            <span className="h-2 w-2 rounded-full mr-1 bg-amber-500"></span>
+            Development Mode
+          </span>
+        )}
+      </footer>
     </div>
   );
 };
